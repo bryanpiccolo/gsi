@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QG Grêmio — Controle de Presença</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@900&amp;family=Anton&amp;display=swap">
+<style>
+  :root {
+    --blue: #0b4ea2;
+    --blue-dark: #063a7c;
+    --black: #111214;
+    --white: #ffffff;
+    --gray-bg: #f4f5f7;
+    --gray-border: #e2e4e9;
+    --gray-text: #5b5f6a;
+    --green: #1f9d55;
+    --amber: #d69e00;
+    --red: #d64545;
+    --gray-bar: #8a8f99;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background: var(--gray-bg);
+    color: var(--black);
+  }
+  header.flag-header {
+    display: block;
+  }
+  .flag-stripe {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 50px;
+    font-size: 32px;
+    font-weight: 900;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    font-family: 'Big Shoulders Display', 'Anton', Impact, sans-serif;
+    -webkit-text-stroke: 1.4px currentColor;
+    text-stroke: 1.4px currentColor;
+  }
+  .flag-stripe.stripe-blue { background: var(--blue); color: var(--black); }
+  .flag-stripe.stripe-white { background: var(--white); color: var(--blue); }
+  .flag-stripe.stripe-black { background: var(--black); color: var(--white); }
+  nav.tabs {
+    display: flex;
+    gap: 4px;
+    padding: 10px 16px 0;
+    background: #fff;
+    border-bottom: 1px solid var(--gray-border);
+    overflow-x: auto;
+  }
+  nav.tabs button {
+    border: none;
+    background: transparent;
+    padding: 10px 14px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--gray-text);
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    white-space: nowrap;
+  }
+  nav.tabs button.active {
+    color: var(--blue);
+    border-bottom-color: var(--blue);
+  }
+  main { max-width: 780px; margin: 0 auto; padding: 16px; padding-bottom: 60px; }
+  .card {
+    background: #fff;
+    border: 1px solid var(--gray-border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .card h2 {
+    font-size: 15px;
+    margin: 0 0 12px;
+    font-weight: 800;
+  }
+  .field { margin-bottom: 12px; }
+  .field label {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--gray-text);
+    margin-bottom: 5px;
+  }
+  .field input[type=text], .field input[type=date], .field input[type=number], .field select, .field textarea {
+    width: 100%;
+    padding: 10px 11px;
+    border: 1.5px solid var(--gray-border);
+    border-radius: 9px;
+    font-size: 14.5px;
+    font-family: inherit;
+    background: #fbfbfc;
+  }
+  .field textarea { min-height: 64px; resize: vertical; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 11px 16px;
+    border-radius: 9px;
+    border: none;
+    font-size: 14.5px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .btn-primary { background: var(--blue); color: #fff; width: 100%; }
+  .btn-primary:active { background: var(--blue-dark); }
+  .btn-secondary { background: #eef0f4; color: var(--black); }
+  .btn-danger { background: #fdeceb; color: var(--red); font-size: 12px; padding: 5px 9px; }
+  .hint { font-size: 12px; color: var(--gray-text); margin-top: 4px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .chip {
+    background: var(--gray-bg);
+    border: 1px solid var(--gray-border);
+    border-radius: 20px;
+    padding: 4px 10px;
+    font-size: 12.5px;
+    font-weight: 600;
+  }
+  .quorum-badge {
+    display: inline-block;
+    margin-top: 6px;
+    background: var(--blue);
+    color: #fff;
+    font-weight: 700;
+    font-size: 12.5px;
+    padding: 3px 10px;
+    border-radius: 20px;
+  }
+  .toast {
+    position: fixed;
+    bottom: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--black);
+    color: #fff;
+    padding: 11px 18px;
+    border-radius: 30px;
+    font-size: 13.5px;
+    font-weight: 600;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .25s ease, transform .25s ease;
+    z-index: 50;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(-6px); }
+
+  .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+  .summary-box {
+    background: #fff;
+    border: 1px solid var(--gray-border);
+    border-radius: var(--radius);
+    padding: 12px 10px;
+    text-align: center;
+  }
+  .summary-box .num { font-size: 20px; font-weight: 800; color: var(--blue); }
+  .summary-box .lbl { font-size: 11px; color: var(--gray-text); font-weight: 600; margin-top: 2px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 7px 6px; border-bottom: 1px solid var(--gray-border); }
+  th { font-size: 11px; text-transform: uppercase; color: var(--gray-text); font-weight: 700; letter-spacing: .3px; }
+  td.num, th.num { text-align: center; }
+  tr:last-child td { border-bottom: none; }
+  .rank-1 td:first-child, .rank-2 td:first-child, .rank-3 td:first-child { font-weight: 800; color: var(--blue); }
+
+  .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .bar-label { width: 90px; font-size: 12.5px; font-weight: 700; flex-shrink: 0; }
+  .bar-track { flex: 1; background: var(--gray-bg); border-radius: 6px; height: 16px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 6px; }
+  .bar-fill.v { background: var(--green); }
+  .bar-fill.e { background: var(--amber); }
+  .bar-fill.d { background: var(--gray-bar); }
+  .bar-pct { width: 40px; font-size: 12px; font-weight: 700; text-align: right; flex-shrink: 0; }
+
+  .season-picker { display: flex; flex-wrap: wrap; gap: 6px; }
+  .season-chip {
+    padding: 7px 13px; border-radius: 20px; border: 1.5px solid var(--gray-border);
+    font-size: 13px; font-weight: 700; background: #fff; color: var(--gray-text); cursor: pointer;
+  }
+  .season-chip.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .dash-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .rank-num { font-weight: 800; color: var(--blue); width: 22px; }
+  tr.row-top td { background: #e8f1fc; }
+  tr.row-rest td { background: #f2f2f4; }
+  tr.total-row td { font-weight: 800; border-top: 2px solid var(--black); background: #fff; }
+  .bool-yes { color: var(--green); font-weight: 700; }
+  .bool-no { color: var(--gray-text); font-weight: 700; }
+  .hidden { display: none !important; }
+
+  #dashboard-capture { background: #fff; padding: 4px; }
+  .capture-subtitle { margin: 10px 0 12px; font-size: 12px; color: var(--gray-text); text-align: center; }
+  #capture-offscreen { position: fixed; left: -10000px; top: 0; width: 420px; background: #fff; }
+
+  .history-item {
+    border: 1px solid var(--gray-border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+  }
+  .history-item .top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .history-item .matchup { font-weight: 700; font-size: 14px; }
+  .history-item .meta { font-size: 11.5px; color: var(--gray-text); margin-top: 2px; }
+  .result-badge { font-size: 11px; font-weight: 800; padding: 2px 9px; border-radius: 20px; }
+  .result-badge.Vitória { background: #e6f6ea; color: var(--green); }
+  .result-badge.Empate { background: #fdf5e0; color: var(--amber); }
+  .result-badge.Derrota { background: #fdeceb; color: var(--red); }
+  .result-badge.none { background: var(--gray-bg); color: var(--gray-text); }
+  .history-names { font-size: 12px; color: var(--gray-text); margin-top: 6px; line-height: 1.5; }
+  .del-link { color: var(--red); font-size: 11.5px; font-weight: 700; background: none; border: none; cursor: pointer; padding: 4px; }
+  .edit-link { color: var(--blue); font-size: 11.5px; font-weight: 700; background: none; border: none; cursor: pointer; padding: 4px; }
+
+  .tabpanel { display: none; }
+  .tabpanel.active { display: block; }
+
+  .confirm-modal { position: fixed; inset: 0; z-index: 100; display: none; align-items: center; justify-content: center; }
+  .confirm-modal.show { display: flex; }
+  .confirm-modal-backdrop { position: absolute; inset: 0; background: rgba(10,12,16,0.55); }
+  .confirm-modal-box {
+    position: relative; background: #fff; border-radius: 14px; padding: 20px; width: min(320px, 85vw);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+  }
+  .confirm-modal-box h3 { margin: 0 0 8px; font-size: 16px; font-weight: 800; }
+  .confirm-modal-box p { margin: 0 0 16px; font-size: 13.5px; color: var(--gray-text); }
+  .confirm-modal-actions { display: flex; gap: 10px; }
+  .confirm-modal-actions .btn { flex: 1; margin: 0; }
+</style>
+</head>
+<body>
+<header class="flag-header">
+  <div class="flag-stripe stripe-blue">GRÊMIO</div>
+  <div class="flag-stripe stripe-white">SUL DA</div>
+  <div class="flag-stripe stripe-black">ILHA</div>
+</header>
+
+<nav class="tabs">
+  <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
+  <button class="tab-btn" data-tab="historico">Histórico</button>
+</nav>
+
+<main>
+
+  <section id="tab-dashboard" class="tabpanel active">
+    <div class="dash-top">
+      <div class="season-picker" id="season-picker"><button type="button" class="season-chip" data-season="all">Todas</button><button type="button" class="season-chip" data-season="2024">2024</button><button type="button" class="season-chip" data-season="2025">2025</button><button type="button" class="season-chip active" data-season="2026">2026</button></div>
+      <button class="btn btn-secondary" id="export-img">📸 Exportar imagens p/ WhatsApp</button>
+    </div>
+
+    <div id="dashboard-capture">
+      <header class="flag-header" id="capture-flag-header">
+        <div class="flag-stripe stripe-blue">GRÊMIO</div>
+        <div class="flag-stripe stripe-white">SUL DA</div>
+        <div class="flag-stripe stripe-black">ILHA</div>
+      </header>
+      <p class="capture-subtitle" id="dash-subtitle">Temporada 2026 · gerado em 20/09/2026</p>
+
+      <div id="capture-part1">
+      <div class="summary-grid">
+        <div class="summary-box"><div class="num" id="sum-jogos">30</div><div class="lbl">Jogos</div></div>
+        <div class="summary-box"><div class="num" id="sum-aproveitamento">33%</div><div class="lbl">Aproveitamento</div></div>
+        <div class="summary-box"><div class="num" id="sum-media">7.6</div><div class="lbl">Média de público</div></div>
+      </div>
+
+      <div class="card">
+        <h2>Aproveitamento do Grêmio</h2>
+        <div id="aproveitamento-bars"><div class="bar-row"><div class="bar-label">Vitórias</div><div class="bar-track"><div class="bar-fill v" style="width:33%"></div></div><div class="bar-pct">33%</div></div><div class="bar-row"><div class="bar-label">Empates</div><div class="bar-track"><div class="bar-fill e" style="width:33%"></div></div><div class="bar-pct">33%</div></div><div class="bar-row"><div class="bar-label">Derrotas</div><div class="bar-track"><div class="bar-fill d" style="width:33%"></div></div><div class="bar-pct">33%</div></div></div>
+      </div>
+
+      <div class="card">
+        <h2>Aproveitamento por QG</h2>
+        <table>
+          <thead><tr><th>QG</th><th class="num">Jogos</th><th class="num">% Vitória</th><th class="num">% Empate</th><th class="num">% Derrota</th></tr></thead>
+          <tbody id="qg-body"><tr><td>Diogo</td><td class="num">5</td><td class="num">40%</td><td class="num">60%</td><td class="num">0%</td></tr><tr><td>Bryan</td><td class="num">3</td><td class="num">0%</td><td class="num">33%</td><td class="num">67%</td></tr><tr><td>Rafa</td><td class="num">3</td><td class="num">33%</td><td class="num">0%</td><td class="num">67%</td></tr><tr><td>Orelha</td><td class="num">3</td><td class="num">100%</td><td class="num">0%</td><td class="num">0%</td></tr><tr><td>Caveira</td><td class="num">3</td><td class="num">0%</td><td class="num">67%</td><td class="num">33%</td></tr><tr><td>Rolim</td><td class="num">2</td><td class="num">100%</td><td class="num">0%</td><td class="num">0%</td></tr><tr><td>Fofo</td><td class="num">2</td><td class="num">50%</td><td class="num">50%</td><td class="num">0%</td></tr><tr><td>Mutuca</td><td class="num">2</td><td class="num">50%</td><td class="num">0%</td><td class="num">50%</td></tr><tr><td>Pereira</td><td class="num">2</td><td class="num">0%</td><td class="num">50%</td><td class="num">50%</td></tr><tr><td>Gusmão</td><td class="num">1</td><td class="num">0%</td><td class="num">0%</td><td class="num">100%</td></tr><tr><td>Ricardo</td><td class="num">1</td><td class="num">0%</td><td class="num">100%</td><td class="num">0%</td></tr><tr><td>Baiaca</td><td class="num">1</td><td class="num">0%</td><td class="num">0%</td><td class="num">100%</td></tr><tr><td>Fabio</td><td class="num">1</td><td class="num">0%</td><td class="num">0%</td><td class="num">100%</td></tr><tr><td>Henrique</td><td class="num">1</td><td class="num">0%</td><td class="num">100%</td><td class="num">0%</td></tr><tr class="total-row"><td>Total</td><td class="num">30</td><td class="num">33%</td><td class="num">33%</td><td class="num">33%</td></tr></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Ranking dos Assadores</h2>
+        <table>
+          <thead><tr><th class="num">#</th><th>Nome</th><th class="num">Vezes que assou</th><th class="num">%</th></tr></thead>
+          <tbody id="assador-body"><tr><td class="num rank-num">1</td><td>Rolim</td><td class="num">8</td><td class="num">27%</td></tr><tr><td class="num rank-num">2</td><td>Diogo</td><td class="num">4</td><td class="num">13%</td></tr><tr><td class="num rank-num">3</td><td>Storck</td><td class="num">3</td><td class="num">10%</td></tr><tr><td class="num rank-num">4</td><td>Rafa</td><td class="num">3</td><td class="num">10%</td></tr><tr><td class="num rank-num">5</td><td>Fofo</td><td class="num">2</td><td class="num">7%</td></tr><tr><td class="num rank-num">6</td><td>Orelha</td><td class="num">2</td><td class="num">7%</td></tr><tr><td class="num rank-num">7</td><td>Pereira</td><td class="num">2</td><td class="num">7%</td></tr><tr><td class="num rank-num">8</td><td>Gusmão</td><td class="num">1</td><td class="num">3%</td></tr><tr><td class="num rank-num">9</td><td>Matheus</td><td class="num">1</td><td class="num">3%</td></tr><tr><td class="num rank-num">10</td><td>Caveira</td><td class="num">1</td><td class="num">3%</td></tr><tr><td class="num rank-num">11</td><td>Ricardo</td><td class="num">1</td><td class="num">3%</td></tr><tr><td class="num rank-num">12</td><td>Baiaca</td><td class="num">1</td><td class="num">3%</td></tr><tr><td class="num rank-num">13</td><td>Henrique</td><td class="num">1</td><td class="num">3%</td></tr><tr class="total-row"><td></td><td>Total</td><td class="num">30</td><td class="num">100%</td></tr></tbody>
+        </table>
+      </div>
+      </div>
+
+      <div id="capture-part2">
+      <div class="card">
+        <h2>Média de público por campeonato</h2>
+        <table>
+          <thead><tr><th>Campeonato</th><th class="num">Jogos</th><th class="num">Média</th></tr></thead>
+          <tbody id="champ-body"><tr><td>Brasileirão</td><td class="num">13</td><td class="num">6.5</td></tr><tr><td>Copa do Brasil</td><td class="num">5</td><td class="num">10.2</td></tr><tr><td>Gaúcho</td><td class="num">7</td><td class="num">9.3</td></tr><tr><td>Sulamericana</td><td class="num">5</td><td class="num">5.6</td></tr><tr class="total-row"><td>Total</td><td class="num">30</td><td class="num">7.6</td></tr></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Ranking de presença</h2>
+        <table>
+          <thead><tr>
+            <th class="num">#</th><th>Nome</th><th class="num">Presenças</th><th class="num">%</th>
+            <th class="num" id="yoy-col-header">26 x 25</th>
+            <th class="num">Total QG+Assou</th>
+            <th class="num">QG/Assou</th>
+          </tr></thead>
+          <tbody id="ranking-body"><tr class="rank-1 row-top"><td class="num rank-num">1</td><td>Rolim</td><td class="num">21</td><td class="num">70%</td><td class="num">-5%</td><td class="num">10</td><td class="num bool-yes">False</td></tr><tr class="rank-2 row-top"><td class="num rank-num">2</td><td>Caveira</td><td class="num">18</td><td class="num">60%</td><td class="num">-10%</td><td class="num">4</td><td class="num bool-yes">False</td></tr><tr class="rank-3 row-top"><td class="num rank-num">3</td><td>Gusmão</td><td class="num">16</td><td class="num">53%</td><td class="num">+45%</td><td class="num">2</td><td class="num bool-yes">False</td></tr><tr class="rank-4 row-top"><td class="num rank-num">4</td><td>Orelha</td><td class="num">16</td><td class="num">53%</td><td class="num">+14%</td><td class="num">5</td><td class="num bool-yes">False</td></tr><tr class="rank-5 row-top"><td class="num rank-num">5</td><td>Fabio</td><td class="num">15</td><td class="num">50%</td><td class="num">-6%</td><td class="num">1</td><td class="num bool-yes">False</td></tr><tr class="rank-6 row-top"><td class="num rank-num">6</td><td>Mutuca</td><td class="num">13</td><td class="num">43%</td><td class="num">+8%</td><td class="num">2</td><td class="num bool-yes">False</td></tr><tr class="rank-7 row-top"><td class="num rank-num">7</td><td>Storck</td><td class="num">12</td><td class="num">40%</td><td class="num">-37%</td><td class="num">3</td><td class="num bool-yes">False</td></tr><tr class="rank-8 row-top"><td class="num rank-num">8</td><td>Bryan</td><td class="num">11</td><td class="num">37%</td><td class="num">-35%</td><td class="num">3</td><td class="num bool-yes">False</td></tr><tr class="rank-9 row-top"><td class="num rank-num">9</td><td>Fofo</td><td class="num">11</td><td class="num">37%</td><td class="num">+38%</td><td class="num">4</td><td class="num bool-yes">False</td></tr><tr class="rank-10 row-top"><td class="num rank-num">10</td><td>Rafa</td><td class="num">11</td><td class="num">37%</td><td class="num">-8%</td><td class="num">6</td><td class="num bool-yes">False</td></tr><tr class="rank-11 row-top"><td class="num rank-num">11</td><td>Matheus</td><td class="num">11</td><td class="num">37%</td><td class="num">+450%</td><td class="num">1</td><td class="num bool-yes">False</td></tr><tr class="rank-12 row-top"><td class="num rank-num">12</td><td>Pereira</td><td class="num">10</td><td class="num">33%</td><td class="num">-17%</td><td class="num">4</td><td class="num bool-yes">False</td></tr><tr class="rank-13 row-rest"><td class="num rank-num">13</td><td>Diogo</td><td class="num">10</td><td class="num">33%</td><td class="num">0%</td><td class="num">9</td><td class="num bool-yes">False</td></tr><tr class="rank-14 row-rest"><td class="num rank-num">14</td><td>Baiaca</td><td class="num">8</td><td class="num">27%</td><td class="num">-53%</td><td class="num">2</td><td class="num bool-yes">False</td></tr><tr class="rank-15 row-rest"><td class="num rank-num">15</td><td>Ricardo</td><td class="num">8</td><td class="num">27%</td><td class="num">-11%</td><td class="num">2</td><td class="num bool-yes">False</td></tr><tr class="rank-16 row-rest"><td class="num rank-num">16</td><td>Pedrinho</td><td class="num">7</td><td class="num">23%</td><td class="num">-53%</td><td class="num">0</td><td class="num bool-no">True</td></tr><tr class="rank-17 row-rest"><td class="num rank-num">17</td><td>Mauricio</td><td class="num">7</td><td class="num">23%</td><td class="num">-22%</td><td class="num">0</td><td class="num bool-no">True</td></tr><tr class="rank-18 row-rest"><td class="num rank-num">18</td><td>Vi</td><td class="num">6</td><td class="num">20%</td><td class="num">+100%</td><td class="num">0</td><td class="num bool-no">True</td></tr><tr class="rank-19 row-rest"><td class="num rank-num">19</td><td>Henrique</td><td class="num">5</td><td class="num">17%</td><td class="num">+67%</td><td class="num">2</td><td class="num bool-yes">False</td></tr><tr class="rank-20 row-rest"><td class="num rank-num">20</td><td>Caio</td><td class="num">3</td><td class="num">10%</td><td class="num">-70%</td><td class="num">0</td><td class="num bool-no">True</td></tr><tr class="rank-21 row-rest"><td class="num rank-num">21</td><td>Luciano</td><td class="num">3</td><td class="num">10%</td><td class="num">+300%</td><td class="num">0</td><td class="num bool-no">True</td></tr><tr class="rank-22 row-rest"><td class="num rank-num">22</td><td>Pedro</td><td class="num">2</td><td class="num">7%</td><td class="num">-50%</td><td class="num">0</td><td class="num bool-no">True</td></tr><tr class="rank-23 row-rest"><td class="num rank-num">23</td><td>Jeff</td><td class="num">2</td><td class="num">7%</td><td class="num">+200%</td><td class="num">0</td><td class="num bool-no">True</td></tr><tr class="rank-24 row-rest"><td class="num rank-num">24</td><td>Thales</td><td class="num">1</td><td class="num">3%</td><td class="num">0%</td><td class="num">0</td><td class="num bool-no">True</td></tr><tr class="rank-25 row-rest"><td class="num rank-num">25</td><td>Cyro</td><td class="num">1</td><td class="num">3%</td><td class="num">+100%</td><td class="num">0</td><td class="num bool-no">True</td></tr></tbody>
+        </table>
+        <p class="hint" id="yoy-hint" style="display: block;">A coluna "26 x 25" compara a presença de cada pessoa nos 30 jogos desta temporada com a presença nos primeiros 30 jogos (na mesma ordem cronológica) da temporada anterior, como (jogos deste ano ÷ jogos do ano anterior − 1).</p>
+      </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="tab-historico" class="tabpanel">
+    <div class="field" style="margin: 4px 0 12px;">
+      <input type="text" id="hist-search" placeholder="Buscar por confronto, campeonato ou nome...">
+    </div>
+    <div id="history-list"><div class="history-item"><div class="top"><div><div class="matchup">Grêmio x Palmeiras</div><div class="meta">20/09/2026 · Brasileirão · QG: Henrique · Assador: Henrique</div></div><div style="text-align:right;"><span class="result-badge Empate">Empate</span><div><button class="del-link" data-id="125">excluir</button></div></div></div><div class="history-names">2 presentes: Henrique, Pedrinho</div></div><div class="history-item"><div class="top"><div><div class="matchup">Botafogo x Grêmio</div><div class="meta">16/09/2026 · Brasileirão · QG: Pereira · Assador: Pereira</div></div><div style="text-align:right;"><span class="result-badge Derrota">Derrota</span><div><button class="del-link" data-id="124">excluir</button></div></div></div><div class="history-names">8 presentes: Mutuca, Caveira, Fabio, Pereira, Vi, Henrique, Bryan, Gusmão</div></div><div class="history-item"><div class="top"><div><div class="matchup">Grêmio x inter</div><div class="meta">03/09/2026 · Copa do Brasil · QG: Diogo · Assador: Diogo</div></div><div style="text-align:right;"><span class="result-badge Vitória">Vitória</span><div><button class="del-link" data-id="123">excluir</button></div></div></div><div class="history-names">15 presentes: Diogo, Rolim, Baiaca, Gusmão, Bryan, Matheus, Rafa, Ricardo, Jeff, Luciano, Orelha, Fabio, Fofo, Pedro, Vi</div></div><div class="history-item"><div class="top"><div><div class="matchup">Inter x Grêmio</div><div class="meta">27/08/2026 · Copa do Brasil · QG: Diogo · Assador: Diogo</div></div><div style="text-align:right;"><span class="result-badge Empate">Empate</span><div><button class="del-link" data-id="122">excluir</button></div></div></div><div class="history-names">11 presentes: Diogo, Bryan, Storck, Fofo, Rolim, Baiaca, Orelha, Luciano, Ricardo, Mauricio, Fabio</div></div><div class="history-item"><div class="top"><div><div class="matchup">Rb x Grêmio</div><div class="meta">23/08/2026 · Brasileirão · QG: Caveira · Assador: Storck</div></div><div style="text-align:right;"><span class="result-badge Derrota">Derrota</span><div><button class="del-link" data-id="120">excluir</button></div></div></div><div class="history-names">13 presentes: Gusmão, Vi, Matheus, Rafa, Caveira, Orelha, Fabio, Bryan, Pereira, Mauricio, Storck, Baiaca, Ricardo</div></div><div class="history-item"><div class="top"><div><div class="matchup">Grêmio x mirassol</div><div class="meta">05/08/2026 · Copa do Brasil · QG: Rolim · Assador: Rolim</div></div><div style="text-align:right;"><span class="result-badge Vitória">Vitória</span><div><button class="del-link" data-id="119">excluir</button></div></div></div><div class="history-names">9 presentes: Rolim, Gusmão, Pedrinho, Matheus, Rafa, Caveira, Orelha, Fabio, Fofo</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x fluminense</div><div class="meta">26/07/2026 · Brasileirão · QG: Fofo · Assador: Fofo</div></div><div style="text-align:right;"><span class="result-badge Empate">Empate</span><div><button class="del-link" data-id="118">excluir</button></div></div></div><div class="history-names">4 presentes: Fofo, Rolim, Fabio, Gusmão</div></div><div class="history-item"><div class="top"><div><div class="matchup">Bolívar x Grêmio</div><div class="meta">23/07/2026 · Sulamericana · QG: Fabio · Assador: Rolim</div></div><div style="text-align:right;"><span class="result-badge Derrota">Derrota</span><div><button class="del-link" data-id="117">excluir</button></div></div></div><div class="history-names">3 presentes: Fabio, Rolim, Storck</div></div><div class="history-item"><div class="top"><div><div class="matchup">Mirassol x Gremio</div><div class="meta">17/07/2026 · Brasileirão · QG: Baiaca · Assador: Baiaca</div></div><div style="text-align:right;"><span class="result-badge Derrota">Derrota</span><div><button class="del-link" data-id="116">excluir</button></div></div></div><div class="history-names">9 presentes: Baiaca, Orelha, Caveira, Mutuca, Bryan, Rafa, Gusmão, Storck, Diogo</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Montevideo</div><div class="meta">26/05/2026 · Sulamericana · QG: Ricardo · Assador: Ricardo</div></div><div style="text-align:right;"><span class="result-badge Empate">Empate</span><div><button class="del-link" data-id="115">excluir</button></div></div></div><div class="history-names">6 presentes: Ricardo, Caveira, Vi, Diogo, Matheus, Mutuca</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Palestino</div><div class="meta">20/05/2026 · Sulamericana · QG: Mutuca · Assador: Rolim</div></div><div style="text-align:right;"><span class="result-badge Vitória">Vitória</span><div><button class="del-link" data-id="114">excluir</button></div></div></div><div class="history-names">6 presentes: Mutuca, Caveira, Rolim, Orelha, Fabio, Ricardo</div></div><div class="history-item"><div class="top"><div><div class="matchup">Bahia x Gremio</div><div class="meta">17/05/2026 · Brasileirão · QG: Pereira · Assador: Pereira</div></div><div style="text-align:right;"><span class="result-badge Empate">Empate</span><div><button class="del-link" data-id="113">excluir</button></div></div></div><div class="history-names">3 presentes: Pereira, Caveira, Rolim</div></div><div class="history-item"><div class="top"><div><div class="matchup">Confiança x Gremio</div><div class="meta">14/05/2026 · Copa do Brasil · QG: Rafa · Assador: Rafa</div></div><div style="text-align:right;"><span class="result-badge Vitória">Vitória</span><div><button class="del-link" data-id="112">excluir</button></div></div></div><div class="history-names">11 presentes: Rafa, Caveira, Rolim, Mutuca, Orelha, Bryan, Gusmão, Pereira, Mauricio, Fabio, Matheus</div></div><div class="history-item"><div class="top"><div><div class="matchup">Palestino x Gremio</div><div class="meta">29/04/2026 · Sulamericana · QG: Caveira · Assador: Caveira</div></div><div style="text-align:right;"><span class="result-badge Empate">Empate</span><div><button class="del-link" data-id="111">excluir</button></div></div></div><div class="history-names">5 presentes: Caveira, Rolim, Rafa, Mutuca, Orelha</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Confiança</div><div class="meta">21/04/2026 · Copa do Brasil · QG: Orelha · Assador: Orelha</div></div><div style="text-align:right;"><span class="result-badge Vitória">Vitória</span><div><button class="del-link" data-id="110">excluir</button></div></div></div><div class="history-names">5 presentes: Orelha, Fofo, Caveira, Storck, Cyro</div></div><div class="history-item"><div class="top"><div><div class="matchup">Inter x Gremio</div><div class="meta">11/04/2026 · Brasileirão · QG: Diogo · Assador: Matheus</div></div><div style="text-align:right;"><span class="result-badge Empate">Empate</span><div><button class="del-link" data-id="109">excluir</button></div></div></div><div class="history-names">10 presentes: Diogo, Matheus, Rolim, Fofo, Caveira, Gusmão, Storck, Pereira, Mauricio, Pedrinho</div></div><div class="history-item"><div class="top"><div><div class="matchup">Montevideo x Gremio</div><div class="meta">08/04/2026 · Sulamericana · QG: Rafa · Assador: Rolim</div></div><div style="text-align:right;"><span class="result-badge Derrota">Derrota</span><div><button class="del-link" data-id="108">excluir</button></div></div></div><div class="history-names">8 presentes: Rafa, Rolim, Caveira, Mutuca, Storck, Orelha, Gusmão, Fabio</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Remo</div><div class="meta">05/04/2026 · Brasileirão · QG: Bryan · Assador: Storck</div></div><div style="text-align:right;"><span class="result-badge Empate">Empate</span><div><button class="del-link" data-id="107">excluir</button></div></div></div><div class="history-names">3 presentes: Bryan, Storck, Mutuca</div></div><div class="history-item"><div class="top"><div><div class="matchup">Vasco x Gremio</div><div class="meta">22/03/2026 · Brasileirão · QG: Mutuca · Assador: Rolim</div></div><div style="text-align:right;"><span class="result-badge Derrota">Derrota</span><div><button class="del-link" data-id="106">excluir</button></div></div></div><div class="history-names">11 presentes: Mutuca, Rolim, Orelha, Diogo, Matheus, Pedrinho, Henrique, Vi, Bryan, Storck, Mauricio</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Vitoria</div><div class="meta">19/03/2026 · Brasileirão · QG: Orelha · Assador: Orelha</div></div><div style="text-align:right;"><span class="result-badge Vitória">Vitória</span><div><button class="del-link" data-id="105">excluir</button></div></div></div><div class="history-names">5 presentes: Orelha, Mauricio, Fabio, Rolim, Gusmão</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x RB</div><div class="meta">12/03/2026 · Brasileirão · QG: Caveira · Assador: Rolim</div></div><div style="text-align:right;"><span class="result-badge Empate">Empate</span><div><button class="del-link" data-id="104">excluir</button></div></div></div><div class="history-names">2 presentes: Caveira, Rolim</div></div><div class="history-item"><div class="top"><div><div class="matchup">Inter x Gremio</div><div class="meta">08/03/2026 · Gaúcho · QG: Diogo · Assador: Diogo</div></div><div style="text-align:right;"><span class="result-badge Empate">Empate</span><div><button class="del-link" data-id="103">excluir</button></div></div></div><div class="history-names">21 presentes: Diogo, Rolim, Fofo, Matheus, Ricardo, Caveira, Pedrinho, Henrique, Fabio, Orelha, Pereira, Pedro, Jeff, Caio, Vi, Luciano, Baiaca, Storck, Thales, Gusmão, Mauricio</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x inter</div><div class="meta">01/03/2026 · Gaúcho · QG: Diogo · Assador: Diogo</div></div><div style="text-align:right;"><span class="result-badge Vitória">Vitória</span><div><button class="del-link" data-id="102">excluir</button></div></div></div><div class="history-names">17 presentes: Diogo, Rolim, Storck, Orelha, Caveira, Pedrinho, Fofo, Rafa, Mutuca, Ricardo, Matheus, Pereira, Baiaca, Fabio, Bryan, Caio, Gusmão</div></div><div class="history-item"><div class="top"><div><div class="matchup">Juventude x Gremio</div><div class="meta">22/02/2026 · Gaúcho · QG: Orelha · Assador: Rafa</div></div><div style="text-align:right;"><span class="result-badge Vitória">Vitória</span><div><button class="del-link" data-id="101">excluir</button></div></div></div><div class="history-names">5 presentes: Orelha, Rafa, Fofo, Ricardo, Matheus</div></div><div class="history-item"><div class="top"><div><div class="matchup">Sp x Gremio</div><div class="meta">11/02/2026 · Brasileirão · QG: Bryan · Assador: Rolim</div></div><div style="text-align:right;"><span class="result-badge Derrota">Derrota</span><div><button class="del-link" data-id="100">excluir</button></div></div></div><div class="history-names">8 presentes: Bryan, Rolim, Mutuca, Gusmão, Rafa, Diogo, Orelha, Fabio</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Noia</div><div class="meta">07/02/2026 · Gaúcho · QG: Fofo · Assador: Fofo</div></div><div style="text-align:right;"><span class="result-badge Vitória">Vitória</span><div><button class="del-link" data-id="99">excluir</button></div></div></div><div class="history-names">4 presentes: Fofo, Rolim, Pedrinho, Pereira</div></div><div class="history-item"><div class="top"><div><div class="matchup">Flu x Gremio</div><div class="meta">28/01/2026 · Brasileirão · QG: Rafa · Assador: Rafa</div></div><div style="text-align:right;"><span class="result-badge Derrota">Derrota</span><div><button class="del-link" data-id="98">excluir</button></div></div></div><div class="history-names">6 presentes: Rafa, Mutuca, Rolim, Caveira, Matheus, Fabio</div></div><div class="history-item"><div class="top"><div><div class="matchup">Inter x Gremio</div><div class="meta">25/01/2026 · Gaúcho · QG: Gusmão · Assador: Gusmão</div></div><div style="text-align:right;"><span class="result-badge Derrota">Derrota</span><div><button class="del-link" data-id="97">excluir</button></div></div></div><div class="history-names">6 presentes: Gusmão, Henrique, Diogo, Baiaca, Pereira, Fofo</div></div><div class="history-item"><div class="top"><div><div class="matchup">gremio x sao luiz</div><div class="meta">17/01/2026 · Gaúcho · QG: Rolim · Assador: Rolim</div></div><div style="text-align:right;"><span class="result-badge Vitória">Vitória</span><div><button class="del-link" data-id="96">excluir</button></div></div></div><div class="history-names">4 presentes: Rolim, Pereira, Caveira, Gusmão</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x São José</div><div class="meta">14/01/2026 · Gaúcho · QG: Bryan · Assador: Storck</div></div><div style="text-align:right;"><span class="result-badge Derrota">Derrota</span><div><button class="del-link" data-id="95">excluir</button></div></div></div><div class="history-names">8 presentes: Bryan, Storck, Rolim, Caveira, Mutuca, Gusmão, Caio, Baiaca</div></div><div class="history-item"><div class="top"><div><div class="matchup">Sport x Gremio</div><div class="meta">07/12/2025 · Brasileirão · QG: Diogo · Assador: Ricardo</div></div><div style="text-align:right;"><span class="result-badge Vitória">Vitória</span><div><button class="del-link" data-id="94">excluir</button></div></div></div><div class="history-names">17 presentes: Diogo, Ricardo, Rolim, Caveira, Storck, Bryan, Orelha, Rafa, Mauricio, Henrique, Luciano, Pereira, Pedrinho, Pedro, Vi, Caio, Fofo</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Fluminense</div><div class="meta">02/12/2025 · Brasileirão · QG: Bryan · Assador: Henrique</div></div><div style="text-align:right;"><span class="result-badge Derrota">Derrota</span><div><button class="del-link" data-id="93">excluir</button></div></div></div><div class="history-names">9 presentes: Bryan, Henrique, Mutuca, Caveira, Mauricio, Baiaca, Orelha, Rafa, Matheus</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Palmeiras</div><div class="meta">25/11/2025 · Brasileirão · QG: Mutuca · Assador: Rolim</div></div><div style="text-align:right;"><span class="result-badge Vitória">Vitória</span><div><button class="del-link" data-id="92">excluir</button></div></div></div><div class="history-names">7 presentes: Mutuca, Fofo, Rolim, Caveira, Gusmão, Fabio, Diogo</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Vasco</div><div class="meta">19/11/2025 · Brasileirão · QG: Henrique · Assador: Matheus</div></div><div style="text-align:right;"><span class="result-badge Vitória">Vitória</span><div><button class="del-link" data-id="91">excluir</button></div></div></div><div class="history-names">14 presentes: Matheus, Henrique, Caveira, Bryan, Orelha, Storck, Pereira, Mauricio, Mutuca, Vi, Caio, Ricardo, Rolim, Diogo</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Cruzeiro</div><div class="meta">05/11/2025 · Brasileirão · QG: Bryan · Assador: Caveira</div></div><div style="text-align:right;"><span class="result-badge Derrota">Derrota</span><div><button class="del-link" data-id="90">excluir</button></div></div></div><div class="history-names">9 presentes: Caveira, Bryan, Orelha, Storck, Pereira, Mauricio, Baiaca, Mutuca, Crippa</div></div><div class="history-item"><div class="top"><div><div class="matchup">Corinthians x Gremio</div><div class="meta">02/11/2025 · Brasileirão · QG: Orelha · Assador: Orelha</div></div><div style="text-align:right;"><span class="result-badge Derrota">Derrota</span><div><button class="del-link" data-id="89">excluir</button></div></div></div><div class="history-names">10 presentes: Orelha, Rafa, Storck, Pereira, Rolim, Caio, Mauricio, Vi, Baiaca, Pedrinho</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Juventude</div><div class="meta">26/10/2025 · Brasileirão · QG: Rafa · Assador: Storck</div></div><div style="text-align:right;"><span class="result-badge Vitória">Vitória</span><div><button class="del-link" data-id="88">excluir</button></div></div></div><div class="history-names">12 presentes: Rafa, Storck, Fofo, Pereira, Bryan, Rolim, Ricardo, Orelha, Pedrinho, Mauricio, Mutuca, Matheus</div></div><div class="history-item"><div class="top"><div><div class="matchup">Bahia x Gremio</div><div class="meta">19/10/2025 · Brasileirão · QG: Caveira · Assador: Caveira</div></div><div style="text-align:right;"><span class="result-badge Derrota">Derrota</span><div><button class="del-link" data-id="87">excluir</button></div></div></div><div class="history-names">3 presentes: Caveira, Rolim, Fofo</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x SP</div><div class="meta">16/10/2025 · Brasileirão · QG: Bryan · Assador: Fofo</div></div><div style="text-align:right;"><span class="result-badge Vitória">Vitória</span><div><button class="del-link" data-id="86">excluir</button></div></div></div><div class="history-names">14 presentes: Fofo, Pereira, Bryan, Rolim, Ricardo, Orelha, Pedrinho, Storck, Mauricio, Mutuca, Pedro, Caveira, Matheus, Caio</div></div><div class="history-item"><div class="top"><div><div class="matchup">RBB x Gremio</div><div class="meta">04/10/2025 · Brasileirão · QG: Mutuca · Assador: Storck</div></div><div style="text-align:right;"><span class="result-badge Derrota">Derrota</span><div><button class="del-link" data-id="85">excluir</button></div></div></div><div class="history-names">12 presentes: Mutuca, Pereira, Bryan, Rolim, Ricardo, Orelha, Pedrinho, Rafa, Storck, Mauricio, Baiaca, Fofo</div></div><div class="history-item"><div class="top"><div><div class="matchup">Santos x Gremio</div><div class="meta">01/10/2025 · Brasileirão · QG: Caveira · Assador: Caveira</div></div><div style="text-align:right;"><span class="result-badge Empate">Empate</span><div><button class="del-link" data-id="84">excluir</button></div></div></div><div class="history-names">8 presentes: Caveira, Pereira, Bryan, Rolim, Mutuca, Fabio, Pedro, Barth</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Botafogo</div><div class="meta">24/09/2025 · Brasileirão · QG: Pereira · Assador: Pereira</div></div><div style="text-align:right;"><span class="result-badge Empate">Empate</span><div><button class="del-link" data-id="83">excluir</button></div></div></div><div class="history-names">3 presentes: Pereira, Caveira, Bryan</div></div><div class="history-item"><div class="top"><div><div class="matchup">Inter x Gremio</div><div class="meta">21/09/2025 · Brasileirão · QG: Fofo · Assador: Fofo</div></div><div style="text-align:right;"><span class="result-badge Vitória">Vitória</span><div><button class="del-link" data-id="82">excluir</button></div></div></div><div class="history-names">18 presentes: Fofo, Diogo, Rolim, Caio, Caveira, Orelha, Pereira, Ricardo, Baiaca, Pedrinho, Bryan, Mauricio, Mutuca, Storck, Henrique, Rafa, Fabio, Matheus</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Mirasol</div><div class="meta">13/09/2025 · Brasileirão · QG: Diogo · Assador: Diogo</div></div><div style="text-align:right;"><span class="result-badge Derrota">Derrota</span><div><button class="del-link" data-id="81">excluir</button></div></div></div><div class="history-names">9 presentes: Diogo, Rolim, Caio, Caveira, Orelha, Pereira, Ricardo, Baiaca, Pedrinho</div></div><div class="history-item"><div class="top"><div><div class="matchup">Fla x Gremio</div><div class="meta">31/08/2025 · Brasileirão · QG: Bryan · Assador: —</div></div><div style="text-align:right;"><span class="result-badge Empate">Empate</span><div><button class="del-link" data-id="80">excluir</button></div></div></div><div class="history-names">5 presentes: Bryan, Rolim, Baiaca, Pereira, Pedrinho</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Ceara</div><div class="meta">23/08/2025 · Brasileirão · QG: Rolim · Assador: —</div></div><div style="text-align:right;"><span class="result-badge Empate">Empate</span><div><button class="del-link" data-id="79">excluir</button></div></div></div><div class="history-names">4 presentes: Rolim, Caveira, Orelha, Rafa</div></div><div class="history-item"><div class="top"><div><div class="matchup">Atl Mg x Gremio</div><div class="meta">17/08/2025 · Brasileirão · QG: Bryan · Assador: Baiaca</div></div><div style="text-align:right;"><span class="result-badge Vitória">Vitória</span><div><button class="del-link" data-id="78">excluir</button></div></div></div><div class="history-names">4 presentes: Bryan, Caveira, Baiaca, Pereira</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Fortaleza</div><div class="meta">29/07/2025 · Brasileirão · QG: Fabio · Assador: Rolim</div></div><div style="text-align:right;"><span class="result-badge Vitória">Vitória</span><div><button class="del-link" data-id="77">excluir</button></div></div></div><div class="history-names">7 presentes: Fabio, Rolim, Vi, Storck, Caveira, Mauricio, Gusmão</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Allianza</div><div class="meta">23/07/2025 · Sulamericana · QG: Rafa · Assador: Rafa</div></div><div style="text-align:right;"><span class="result-badge Empate">Empate</span><div><button class="del-link" data-id="76">excluir</button></div></div></div><div class="history-names">6 presentes: Rafa, Pedrinho, Fabio, Bryan, Caveira, Orelha</div></div><div class="history-item"><div class="top"><div><div class="matchup">Allianza x Gremio</div><div class="meta">16/07/2025 · Sulamericana · QG: Diogo · Assador: Storck</div></div><div style="text-align:right;"><span class="result-badge Derrota">Derrota</span><div><button class="del-link" data-id="75">excluir</button></div></div></div><div class="history-names">10 presentes: Diogo, Storck, Pedrinho, Fabio, Pedro, Gusmão, Bryan, Ricardo, Baiaca, Rolim</div></div><div class="history-item"><div class="top"><div><div class="matchup">Cruzeiro x Gremio</div><div class="meta">13/07/2025 · Brasileirão · QG: Rolim · Assador: Fofo</div></div><div style="text-align:right;"><span class="result-badge Derrota">Derrota</span><div><button class="del-link" data-id="74">excluir</button></div></div></div><div class="history-names">5 presentes: Rolim, Fofo, Storck, Caveira, Mauricio</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x CSA</div><div class="meta">20/05/2025 · Copa do Brasil · QG: Caveira · Assador: Storck</div></div><div style="text-align:right;"><span class="result-badge Empate">Empate</span><div><button class="del-link" data-id="73">excluir</button></div></div></div><div class="history-names">11 presentes: Caveira, Rolim, Pedrinho, Fabio, Fofo, Storck, Baiaca, Caio, Crippa, Mutuca, Pedro</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Godoy</div><div class="meta">13/05/2025 · Sulamericana · QG: Rolim · Assador: Rolim</div></div><div style="text-align:right;"><span class="result-badge Empate">Empate</span><div><button class="del-link" data-id="72">excluir</button></div></div></div><div class="history-names">5 presentes: Rolim, Mutuca, Caveira, Ricardo, Henrique</div></div><div class="history-item"><div class="top"><div><div class="matchup">Atl grau x Gremio</div><div class="meta">07/05/2025 · Sulamericana · QG: Caveira · Assador: Mauricio</div></div><div style="text-align:right;"><span class="result-badge Empate">Empate</span><div><button class="del-link" data-id="71">excluir</button></div></div></div><div class="history-names">11 presentes: Caveira, Rolim, Pedrinho, Fabio, Matheus, Rafa, Orelha, Storck, Gusmão, Vi, Mauricio</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Santos</div><div class="meta">04/05/2025 · Brasileirão · QG: Orelha · Assador: Orelha</div></div><div style="text-align:right;"><span class="result-badge Vitória">Vitória</span><div><button class="del-link" data-id="70">excluir</button></div></div></div><div class="history-names">9 presentes: Orelha, Rafa, Ricardo, Rolim, Caveira, Baiaca, Caio, Mauricio, Gusmão</div></div><div class="history-item"><div class="top"><div><div class="matchup">Godoy x Gremio</div><div class="meta">24/04/2025 · Sulamericana · QG: Caio · Assador: Rafa</div></div><div style="text-align:right;"><span class="result-badge Empate">Empate</span><div><button class="del-link" data-id="69">excluir</button></div></div></div><div class="history-names">11 presentes: Caio, Rafa, Storck, Mutuca, Barth, Orelha, Baiaca, Fabio, Pedrinho, Caveira, Bryan</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Inter</div><div class="meta">19/04/2025 · Brasileirão · QG: Caio · Assador: Fofo</div></div><div style="text-align:right;"><span class="result-badge Empate">Empate</span><div><button class="del-link" data-id="68">excluir</button></div></div></div><div class="history-names">9 presentes: Caio, Mutuca, Pedrinho, Rafa, Mauricio, Rolim, Baiaca, Fofo, Orelha</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Flamengo</div><div class="meta">13/04/2025 · Brasileirão · QG: Caveira · Assador: Storck</div></div><div style="text-align:right;"><span class="result-badge Derrota">Derrota</span><div><button class="del-link" data-id="67">excluir</button></div></div></div><div class="history-names">13 presentes: Caveira, Rolim, Crippa, Storck, Bryan, Baiaca, Mutuca, Caio, Ricardo, Gusmão, Fofo, Diogo, Orelha</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Atl grau</div><div class="meta">08/04/2025 · Sulamericana · QG: Mutuca · Assador: Rolim</div></div><div style="text-align:right;"><span class="result-badge Vitória">Vitória</span><div><button class="del-link" data-id="66">excluir</button></div></div></div><div class="history-names">9 presentes: Rolim, Crippa, Storck, Bryan, Baiaca, Mutuca, Caio, Fabio, Barth</div></div><div class="history-item"><div class="top"><div><div class="matchup">Ceara x Gremio</div><div class="meta">05/04/2025 · Brasileirão · QG: Rolim · Assador: Rolim</div></div><div style="text-align:right;"><span class="result-badge Derrota">Derrota</span><div><button class="del-link" data-id="65">excluir</button></div></div></div><div class="history-names">4 presentes: Rolim, Pedrinho, Pereira, Ricardo</div></div><div class="history-item"><div class="top"><div><div class="matchup">Sportivo Luqueno x Gremio</div><div class="meta">02/04/2025 · Sulamericana · QG: Bryan · Assador: Storck</div></div><div style="text-align:right;"><span class="result-badge Vitória">Vitória</span><div><button class="del-link" data-id="64">excluir</button></div></div></div><div class="history-names">12 presentes: Bryan, Caveira, Diogo, Fabio, Gusmão, Crippa, Mutuca, Baiaca, Pedro, Henrique, Vi, Storck</div></div><div class="history-item"><div class="top"><div><div class="matchup">Inter x Gremio</div><div class="meta">16/03/2025 · Gaúcho · QG: Pedrinho · Assador: Crippa</div></div><div style="text-align:right;"><span class="result-badge Empate">Empate</span><div><button class="del-link" data-id="63">excluir</button></div></div></div><div class="history-names">7 presentes: Pedrinho, Crippa, Storck, Bryan, Orelha, Fabio, Baiaca</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Inter</div><div class="meta">08/03/2025 · Gaúcho · QG: Gusmão · Assador: Storck</div></div><div style="text-align:right;"><span class="result-badge Derrota">Derrota</span><div><button class="del-link" data-id="62">excluir</button></div></div></div><div class="history-names">16 presentes: Gusmão, Rolim, Caveira, Storck, Pedrinho, Bryan, Diogo, Orelha, Fabio, Pereira, Baiaca, Crippa, Ricardo, Rafa, Thales, Mauricio</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Juventude</div><div class="meta">22/02/2025 · Gaúcho · QG: Baiaca · Assador: Baiaca</div></div><div style="text-align:right;"><span class="result-badge Vitória">Vitória</span><div><button class="del-link" data-id="61">excluir</button></div></div></div><div class="history-names">10 presentes: Baiaca, Rolim, Caio, Bryan, Fofo, Caveira, Pereira, Gusmão, Storck, Crippa</div></div><div class="history-item"><div class="top"><div><div class="matchup">São raimundo x Gremio</div><div class="meta">19/02/2025 · Copa do Brasil · QG: Diogo · Assador: Diogo</div></div><div style="text-align:right;"><span class="result-badge Empate">Empate</span><div><button class="del-link" data-id="60">excluir</button></div></div></div><div class="history-names">7 presentes: Diogo, Storck, Caveira, Fabio, Gusmão, Mutuca, Mauricio</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Pelotas</div><div class="meta">11/02/2025 · Gaúcho · QG: Fabio · Assador: Fabio</div></div><div style="text-align:right;"><span class="result-badge Vitória">Vitória</span><div><button class="del-link" data-id="59">excluir</button></div></div></div><div class="history-names">2 presentes: Fabio, Storck</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Inter</div><div class="meta">08/02/2025 · Gaúcho · QG: Caio · Assador: Rolim</div></div><div style="text-align:right;"><span class="result-badge Empate">Empate</span><div><button class="del-link" data-id="58">excluir</button></div></div></div><div class="history-names">10 presentes: Rolim, Caio, Bryan, Baiaca, Pedrinho, Rafa, Storck, Diogo, Fofo, Orelha</div></div><div class="history-item"><div class="top"><div><div class="matchup">Juventude x Gremio</div><div class="meta">05/02/2025 · Gaúcho · QG: Orelha · Assador: Storck</div></div><div style="text-align:right;"><span class="result-badge Derrota">Derrota</span><div><button class="del-link" data-id="57">excluir</button></div></div></div><div class="history-names">8 presentes: Rolim, Gusmão, Diogo, Storck, Orelha, Pereira, Fabio, Rafa</div></div><div class="history-item"><div class="top"><div><div class="matchup">Brasil x Gremio</div><div class="meta">24/01/2025 · Gaúcho · QG: Bryan · Assador: Storck</div></div><div style="text-align:right;"><span class="result-badge Empate">Empate</span><div><button class="del-link" data-id="56">excluir</button></div></div></div><div class="history-names">12 presentes: Bryan, Caveira, Diogo, Fabio, Gusmão, Pereira, Mutuca, Storck, Pedrinho, Rafa, Rolim, Sperotto</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Corinthians</div><div class="meta">08/12/2024 · Brasileirão · QG: Orelha · Assador: Storck</div></div><div style="text-align:right;"><span class="result-badge Derrota">Derrota</span><div><button class="del-link" data-id="55">excluir</button></div></div></div><div class="history-names">16 presentes: Caveira, Gusmão, Mutuca, Fabio, Rafa, Bryan, Matheus, Baiaca, Ricardo, Rolim, Orelha, Storck, Pedrinho, Fofo, Diogo, Mauricio</div></div><div class="history-item"><div class="top"><div><div class="matchup">Vitoria x Gremio</div><div class="meta">04/12/2024 · Brasileirão · QG: Caveira · Assador: Caveira</div></div><div style="text-align:right;"><span class="result-badge Empate">Empate</span><div><button class="del-link" data-id="54">excluir</button></div></div></div><div class="history-names">3 presentes: Caveira, Gusmão, Pereira</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x São Paulo</div><div class="meta">01/12/2024 · Brasileirão · QG: Mutuca · Assador: Mauricio</div></div><div style="text-align:right;"><span class="result-badge Vitória">Vitória</span><div><button class="del-link" data-id="53">excluir</button></div></div></div><div class="history-names">11 presentes: Mutuca, Fabio, Fofo, Rafa, Pedro, Caveira, Vicente, Gusmão, Orelha, Mauricio, Matheus</div></div><div class="history-item"><div class="top"><div><div class="matchup">Cruzeiro x Gremio</div><div class="meta">24/11/2024 · Brasileirão · QG: Storck · Assador: Rolim</div></div><div style="text-align:right;"><span class="result-badge Empate">Empate</span><div><button class="del-link" data-id="52">excluir</button></div></div></div><div class="history-names">17 presentes: Matheus, Fabio, Pedrinho, Vi, Caveira, Rolim, Gusmão, Storck, Mutuca, Rafa, Diogo, Mauricio, Ricardo, Pereira, Orelha, Luciano, Thales</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Juventude</div><div class="meta">20/11/2024 · Brasileirão · QG: Bryan · Assador: Matheus</div></div><div style="text-align:right;"><span class="result-badge Empate">Empate</span><div><button class="del-link" data-id="51">excluir</button></div></div></div><div class="history-names">13 presentes: Bryan, Matheus, Rolim, Rafa, Gusmão, Mutuca, Caveira, Fabio, Orelha, Diogo, Pereira, Pedro, Duda</div></div><div class="history-item"><div class="top"><div><div class="matchup">Palmeiras x Gremio</div><div class="meta">08/11/2024 · Brasileirão · QG: Rolim · Assador: Rolim</div></div><div style="text-align:right;"><span class="result-badge Derrota">Derrota</span><div><button class="del-link" data-id="50">excluir</button></div></div></div><div class="history-names">3 presentes: Rolim, Rafa, Baiaca</div></div><div class="history-item"><div class="top"><div><div class="matchup">Fluminense x Gremio</div><div class="meta">01/11/2024 · Brasileirão · QG: Rolim · Assador: Rolim</div></div><div style="text-align:right;"><span class="result-badge Empate">Empate</span><div><button class="del-link" data-id="49">excluir</button></div></div></div><div class="history-names">6 presentes: Rolim, Gusmão, Mutuca, Caveira, Mauricio, Fofo</div></div><div class="history-item"><div class="top"><div><div class="matchup">Inter x Gremio</div><div class="meta">19/10/2024 · Brasileirão · QG: Diogo · Assador: Diogo</div></div><div style="text-align:right;"><span class="result-badge Derrota">Derrota</span><div><button class="del-link" data-id="48">excluir</button></div></div></div><div class="history-names">15 presentes: Diogo, Storck, Rafa, Orelha, Mutuca, Caio, Rolim, Matheus, Pereira, Thales, Ricardo, Baiaca, Pedrinho, Caveira, Mauricio</div></div><div class="history-item"><div class="top"><div><div class="matchup">Atl MG x Gremio</div><div class="meta">09/10/2024 · Brasileirão · QG: Rafa · Assador: Storck</div></div><div style="text-align:right;"><span class="result-badge Derrota">Derrota</span><div><button class="del-link" data-id="47">excluir</button></div></div></div><div class="history-names">10 presentes: Storck, Rafa, Fabio, Orelha, Diogo, Mutuca, Matheus, Gusmão, Henrique, Caio</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Fortaleza</div><div class="meta">04/10/2024 · Brasileirão · QG: Rolim · Assador: Rolim</div></div><div style="text-align:right;"><span class="result-badge Vitória">Vitória</span><div><button class="del-link" data-id="46">excluir</button></div></div></div><div class="history-names">5 presentes: Rolim, Orelha, Gusmão, Storck, Caio</div></div><div class="history-item"><div class="top"><div><div class="matchup">Botafogo x Gremio</div><div class="meta">28/09/2024 · Brasileirão · QG: Caveira · Assador: Caveira</div></div><div style="text-align:right;"><span class="result-badge Empate">Empate</span><div><button class="del-link" data-id="45">excluir</button></div></div></div><div class="history-names">2 presentes: Caveira, Rafa</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Criciuma</div><div class="meta">25/09/2024 · Brasileirão · QG: Orelha · Assador: Orelha</div></div><div style="text-align:right;"><span class="result-badge Derrota">Derrota</span><div><button class="del-link" data-id="44">excluir</button></div></div></div><div class="history-names">9 presentes: Caveira, Rafa, Caio, Gusmão, Orelha, Mutuca, Matheus, Pedro, Pereira</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Flamengo</div><div class="meta">22/09/2024 · Brasileirão · QG: Caveira · Assador: Caveira</div></div><div style="text-align:right;"><span class="result-badge Vitória">Vitória</span><div><button class="del-link" data-id="43">excluir</button></div></div></div><div class="history-names">8 presentes: Mutuca, Orelha, Caveira, Rafa, Thales, Baiaca, Caio, Fabio</div></div><div class="history-item"><div class="top"><div><div class="matchup">RB x Gremio</div><div class="meta">15/09/2024 · Brasileirão · QG: Bryan · Assador: Pereira</div></div><div style="text-align:right;"><span class="result-badge Empate">Empate</span><div><button class="del-link" data-id="42">excluir</button></div></div></div><div class="history-names">12 presentes: Fabio, Pedrinho, Rolim, Thales, Orelha, Caio, Ricardo, Storck, Bryan, Pereira, Sperotto, Pedro</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Atletico MG</div><div class="meta">01/09/2024 · Brasileirão · QG: Fabio · Assador: Fofo</div></div><div style="text-align:right;"><span class="result-badge Derrota">Derrota</span><div><button class="del-link" data-id="41">excluir</button></div></div></div><div class="history-names">6 presentes: Fabio, Pedrinho, Caveira, Rolim, Fofo, Thales</div></div><div class="history-item"><div class="top"><div><div class="matchup">Criciuma x Gremio</div><div class="meta">25/08/2024 · Brasileirão · QG: Mutuca · Assador: Baiaca</div></div><div style="text-align:right;"><span class="result-badge Vitória">Vitória</span><div><button class="del-link" data-id="40">excluir</button></div></div></div><div class="history-names">11 presentes: Pedrinho, Mutuca, Bryan, Ricardo, Rafa, Matheus, Orelha, Mauricio, Rolim, Caveira, Baiaca</div></div><div class="history-item"><div class="top"><div><div class="matchup">Fluminense x Gremio</div><div class="meta">20/08/2024 · Libertadores · QG: Orelha · Assador: Storck</div></div><div style="text-align:right;"><span class="result-badge Derrota">Derrota</span><div><button class="del-link" data-id="39">excluir</button></div></div></div><div class="history-names">18 presentes: Pedrinho, Sperotto, Pereira, Mutuca, Bryan, Ricardo, Diogo, Gusmão, Rafa, Caio, Henrique, Storck, Fabio, Matheus, Luciano, Jeff, Orelha, Vi</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Bahia</div><div class="meta">17/08/2024 · Brasileirão · QG: Mutuca · Assador: Mutuca</div></div><div style="text-align:right;"><span class="result-badge Derrota">Derrota</span><div><button class="del-link" data-id="38">excluir</button></div></div></div><div class="history-names">7 presentes: Mutuca, Pedrinho, Caveira, Caio, Rafa, Baiaca, Matheus</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Fluminense</div><div class="meta">13/08/2024 · Libertadores · QG: Caio · Assador: Fofo</div></div><div style="text-align:right;"><span class="result-badge Vitória">Vitória</span><div><button class="del-link" data-id="37">excluir</button></div></div></div><div class="history-names">16 presentes: Pedrinho, Caveira, Pereira, Mutuca, Luciano, Jeff, Ricardo, Sperotto, Orelha, Fofo, Caio, Baiaca, Mauricio, Matheus, Fabio, Thales</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Corinthians</div><div class="meta">07/08/2024 · Copa do Brasil · QG: Diogo · Assador: Matheus</div></div><div style="text-align:right;"><span class="result-badge Derrota">Derrota</span><div><button class="del-link" data-id="36">excluir</button></div></div></div><div class="history-names">17 presentes: Pedrinho, Caveira, Pereira, Mutuca, Rolim, Bryan, Ricardo, Diogo, Gusmão, Rafa, Caio, Henrique, Mauricio, Storck, Fabio, Thales, Matheus</div></div><div class="history-item"><div class="top"><div><div class="matchup">Athletico x Gremio</div><div class="meta">04/08/2024 · Brasileirão · QG: Pedrinho · Assador: Pedrinho</div></div><div style="text-align:right;"><span class="result-badge Vitória">Vitória</span><div><button class="del-link" data-id="35">excluir</button></div></div></div><div class="history-names">6 presentes: Pedrinho, Caveira, Pereira, Sperotto, Cyro, Mutuca</div></div><div class="history-item"><div class="top"><div><div class="matchup">Corinthians x Gremio</div><div class="meta">31/07/2024 · Copa do Brasil · QG: Caveira · Assador: Caveira</div></div><div style="text-align:right;"><span class="result-badge Empate">Empate</span><div><button class="del-link" data-id="34">excluir</button></div></div></div><div class="history-names">14 presentes: Rolim, Caveira, Pedrinho, Gusmão, Matheus, Orelha, Rafa, Storck, Pereira, Diogo, Ricardo, Caio, Henrique, Pedro</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Vasco</div><div class="meta">28/07/2024 · Brasileirão · QG: Rafa · Assador: Storck</div></div><div style="text-align:right;"><span class="result-badge Vitória">Vitória</span><div><button class="del-link" data-id="33">excluir</button></div></div></div><div class="history-names">10 presentes: Rolim, Caveira, Fabio, Caio, Storck, Fofo, Mauricio, Pedrinho, Orelha, Rafa</div></div><div class="history-item"><div class="top"><div><div class="matchup">Corinthians x Gremio</div><div class="meta">25/07/2024 · Brasileirão · QG: Diogo · Assador: Rolim</div></div><div style="text-align:right;"><span class="result-badge Empate">Empate</span><div><button class="del-link" data-id="32">excluir</button></div></div></div><div class="history-names">15 presentes: Rolim, Caveira, Fabio, Caio, Storck, Pereira, Diogo, Ricardo, Bryan, Mauricio, Orelha, Matheus, Pedrinho, Pedro, Gusmão</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Vitoria</div><div class="meta">21/07/2024 · Brasileirão · QG: Fofo · Assador: Fofo</div></div><div style="text-align:right;"><span class="result-badge Vitória">Vitória</span><div><button class="del-link" data-id="31">excluir</button></div></div></div><div class="history-names">7 presentes: Fofo, Rolim, Pereira, Diogo, Fabio, Bryan, Ricardo</div></div><div class="history-item"><div class="top"><div><div class="matchup">São Paulo x Gremio</div><div class="meta">17/07/2024 · Brasileirão · QG: Orelha · Assador: Pedrinho</div></div><div style="text-align:right;"><span class="result-badge Derrota">Derrota</span><div><button class="del-link" data-id="30">excluir</button></div></div></div><div class="history-names">12 presentes: Rolim, Matheus, Orelha, Rafa, Caveira, Pereira, Gusmão, Pedrinho, Pedro, Diogo, Storck, Baiaca</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Operario</div><div class="meta">14/07/2024 · Copa do Brasil · QG: Rafa · Assador: Rafa</div></div><div style="text-align:right;"><span class="result-badge Vitória">Vitória</span><div><button class="del-link" data-id="29">excluir</button></div></div></div><div class="history-names">10 presentes: Rolim, Caio, Matheus, Orelha, Rafa, Bryan, Baiaca, Mauricio, Ricardo, Diogo</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Cruzeiro</div><div class="meta">10/07/2024 · Brasileirão · QG: Gusmão · Assador: Vi</div></div><div style="text-align:right;"><span class="result-badge Derrota">Derrota</span><div><button class="del-link" data-id="28">excluir</button></div></div></div><div class="history-names">17 presentes: Rolim, Caveira, Fabio, Caio, Storck, Fofo, Matheus, Orelha, Rafa, Bryan, Gusmão, Mauricio, Pedrinho, Pereira, Ricardo, Vi, Luciano</div></div><div class="history-item"><div class="top"><div><div class="matchup">Juventude x Gremio</div><div class="meta">07/07/2024 · Brasileirão · QG: Caveira · Assador: Fabio</div></div><div style="text-align:right;"><span class="result-badge Derrota">Derrota</span><div><button class="del-link" data-id="27">excluir</button></div></div></div><div class="history-names">10 presentes: Rolim, Caveira, Fabio, Caio, Storck, Fofo, Matheus, Baiaca, Orelha, Rafa</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Palmeiras</div><div class="meta">04/07/2024 · Brasileirão · QG: Rolim · Assador: Rolim</div></div><div style="text-align:right;"><span class="result-badge Empate">Empate</span><div><button class="del-link" data-id="26">excluir</button></div></div></div><div class="history-names">6 presentes: Rolim, Caveira, Pereira, Fabio, Diogo, Pedrinho</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Fluminense</div><div class="meta">30/06/2024 · Brasileirão · QG: Rolim · Assador: Fofo</div></div><div style="text-align:right;"><span class="result-badge Vitória">Vitória</span><div><button class="del-link" data-id="25">excluir</button></div></div></div><div class="history-names">15 presentes: Fofo, Fabio, Rolim, Caveira, Pereira, Ricardo, Baiaca, Bryan, Caio, Gusmão, Mauricio, Pedrinho, Storck, Diogo, Sperotto</div></div><div class="history-item"><div class="top"><div><div class="matchup">Grêmio x Inter</div><div class="meta">22/06/2024 · Brasileirão · QG: Caveira · Assador: Ricardo</div></div><div style="text-align:right;"><span class="result-badge Derrota">Derrota</span><div><button class="del-link" data-id="24">excluir</button></div></div></div><div class="history-names">13 presentes: Rolim, Caveira, Pereira, Ricardo, Baiaca, Henrique, Bryan, Fabio, Vi, Matheus, Caio, Orelha, Rafa</div></div><div class="history-item"><div class="top"><div><div class="matchup">Fortaleza x Grêmio</div><div class="meta">19/06/2024 · Brasileirão · QG: Rolim · Assador: Rolim</div></div><div style="text-align:right;"><span class="result-badge Derrota">Derrota</span><div><button class="del-link" data-id="23">excluir</button></div></div></div><div class="history-names">7 presentes: Rolim, Caveira, Storck, Gusmão, Diogo, Pereira, Ricardo</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Botafogo</div><div class="meta">16/06/2024 · Brasileirão · QG: Fofo · Assador: Fofo</div></div><div style="text-align:right;"><span class="result-badge Derrota">Derrota</span><div><button class="del-link" data-id="22">excluir</button></div></div></div><div class="history-names">2 presentes: Fofo, Fabio</div></div><div class="history-item"><div class="top"><div><div class="matchup">Flamengo x Grêmio</div><div class="meta">13/06/2024 · Brasileirão · QG: Bryan · Assador: Storck</div></div><div style="text-align:right;"><span class="result-badge Derrota">Derrota</span><div><button class="del-link" data-id="21">excluir</button></div></div></div><div class="history-names">6 presentes: Bryan, Pereira, Storck, Baiaca, Henrique, Pedro</div></div><div class="history-item"><div class="top"><div><div class="matchup">Huachiupato x Gremio</div><div class="meta">04/06/2024 · Libertadores · QG: Diogo · Assador: Caveira</div></div><div style="text-align:right;"><span class="result-badge Vitória">Vitória</span><div><button class="del-link" data-id="20">excluir</button></div></div></div><div class="history-names">18 presentes: Rolim, Pedro, Diogo, Pereira, Storck, Ricardo, Orelha, Fabio, Mauricio, Pedrinho, Vi, Matheus, Gusmão, Fofo, Caveira, Luciano, Jeff, Henrique</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Redbull</div><div class="meta">01/06/2024 · Brasileirão · QG: Bryan · Assador: Storck</div></div><div style="text-align:right;"><span class="result-badge Empate">Empate</span><div><button class="del-link" data-id="19">excluir</button></div></div></div><div class="history-names">12 presentes: Rolim, Fabio, Bryan, Pereira, Storck, Caio, Matheus, Orelha, Rafa, Mauricio, Ricardo, Storck</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Strongest</div><div class="meta">29/05/2024 · Libertadores · QG: Henrique · Assador: Matheus</div></div><div style="text-align:right;"><span class="result-badge Vitória">Vitória</span><div><button class="del-link" data-id="18">excluir</button></div></div></div><div class="history-names">15 presentes: Diogo, Vi, Ricardo, Matheus, Caio, Gusmão, Bryan, Baiaca, Pereira, Storck, Luciano, Jeff, Pedrinho, Henrique, Thales</div></div><div class="history-item"><div class="top"><div><div class="matchup">Operario x Gremio</div><div class="meta">30/04/2024 · Copa do Brasil · QG: Caio · Assador: Ricardo</div></div><div style="text-align:right;"><span class="result-badge Empate">Empate</span><div><button class="del-link" data-id="17">excluir</button></div></div></div><div class="history-names">10 presentes: Rolim, Fabio, Diogo, Caveira, Ricardo, Ricardo, Pedro, Mutuca, Caio, Gusmão</div></div><div class="history-item"><div class="top"><div><div class="matchup">Estudiantes x Gremio</div><div class="meta">23/04/2024 · Libertadores · QG: Rafa · Assador: Rolim</div></div><div style="text-align:right;"><span class="result-badge Vitória">Vitória</span><div><button class="del-link" data-id="16">excluir</button></div></div></div><div class="history-names">16 presentes: Rolim, Fabio, Diogo, Vi, Ricardo, Matheus, Orelha, Rafa, Pedro, Pereira, Luciano, Fofo, Mauricio, Gusmão, Jeff, Mutuca</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Cuiaba</div><div class="meta">20/04/2024 · Brasileirão · QG: Fabio · Assador: Diogo</div></div><div style="text-align:right;"><span class="result-badge Vitória">Vitória</span><div><button class="del-link" data-id="15">excluir</button></div></div></div><div class="history-names">3 presentes: Rolim, Fabio, Diogo</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Athletico PR</div><div class="meta">17/04/2024 · Brasileirão · QG: Mutuca · Assador: Mutuca</div></div><div style="text-align:right;"><span class="result-badge Vitória">Vitória</span><div><button class="del-link" data-id="14">excluir</button></div></div></div><div class="history-names">4 presentes: Mutuca, Rolim, Storck, Caveira</div></div><div class="history-item"><div class="top"><div><div class="matchup">Vasco x Gremio</div><div class="meta">14/04/2024 · Brasileirão · QG: Rafa · Assador: Rafa</div></div><div style="text-align:right;"><span class="result-badge Derrota">Derrota</span><div><button class="del-link" data-id="13">excluir</button></div></div></div><div class="history-names">9 presentes: Bryan, Baiaca, Rafa, Ricardo, Orelha, Mauricio, Caveira, Vi, Matheus</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Huachiopato</div><div class="meta">09/04/2024 · Libertadores · QG: Orelha · Assador: Rolim</div></div><div style="text-align:right;"><span class="result-badge Derrota">Derrota</span><div><button class="del-link" data-id="12">excluir</button></div></div></div><div class="history-names">18 presentes: Rolim, Bryan, Rafa, Pereira, Storck, Ricardo, Orelha, Fabio, Drugo, Pedrinho, Mutuca, Matheus, Gusmão, Fofo, Caveira, Mauricio, Caio, Pedro</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Juventude</div><div class="meta">06/04/2024 · Gaúcho · QG: Bryan · Assador: Storck</div></div><div style="text-align:right;"><span class="result-badge Vitória">Vitória</span><div><button class="del-link" data-id="11">excluir</button></div></div></div><div class="history-names">18 presentes: Rolim, Bryan, Rafa, Pereira, Storck, Ricardo, Orelha, Drugo, Bosa, Pedrinho, Mutuca, Matheus, Mauricio, Fofo, Caveira, Sperotto, Baiaca, Pedro</div></div><div class="history-item"><div class="top"><div><div class="matchup">Strongest x Gremio</div><div class="meta">02/04/2024 · Libertadores · QG: Caveira · Assador: Storck</div></div><div style="text-align:right;"><span class="result-badge Derrota">Derrota</span><div><button class="del-link" data-id="10">excluir</button></div></div></div><div class="history-names">23 presentes: Rolim, Bryan, Rafa, Pereira, Storck, Ricardo, Orelha, Fabio, Henrique, Pedrinho, Mutuca, Matheus, Gusmão, Fofo, Caveira, Sperotto, Diogo, Thales, Vi, Mauricio, Luciano, Drugo, Bosa</div></div><div class="history-item"><div class="top"><div><div class="matchup">Juventude x Gremio</div><div class="meta">30/03/2024 · Gaúcho · QG: Fofo · Assador: Fofo</div></div><div style="text-align:right;"><span class="result-badge Empate">Empate</span><div><button class="del-link" data-id="9">excluir</button></div></div></div><div class="history-names">11 presentes: Rolim, Bryan, Pereira, Caio, Storck, Mauricio, Fabio, Fofo, Sperotto, Bosa, Baiaca</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Caxias</div><div class="meta">26/03/2024 · Gaúcho · QG: Caio · Assador: Rolim</div></div><div style="text-align:right;"><span class="result-badge Vitória">Vitória</span><div><button class="del-link" data-id="8">excluir</button></div></div></div><div class="history-names">17 presentes: Mutuca, Rolim, Bryan, Pereira, Caio, Storck, Ricardo, Luciano, Mauricio, Gusmão, Fabio, Fofo, Matheus, Sperotto, Drugo, Thales, Jeff</div></div><div class="history-item"><div class="top"><div><div class="matchup">Caxias x Gremio</div><div class="meta">16/03/2024 · Gaúcho · QG: Mutuca · Assador: Rolim</div></div><div style="text-align:right;"><span class="result-badge Vitória">Vitória</span><div><button class="del-link" data-id="7">excluir</button></div></div></div><div class="history-names">11 presentes: Mutuca, Rolim, Bryan, Pereira, Baiaca, Storck, Rafa, Cyro, Ricardo, Pedrinho, Luciano</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Brasil Pel</div><div class="meta">10/03/2024 · Gaúcho · QG: Fofo · Assador: Fofo</div></div><div style="text-align:right;"><span class="result-badge Vitória">Vitória</span><div><button class="del-link" data-id="6">excluir</button></div></div></div><div class="history-names">14 presentes: Caveira, Diogo, Fabio, Orelha, Rafa, Ricardo, Rolim, Fofo, Pedrinho, Pereira, Drugo, Storck, Mauricio, Gusmão</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Guarani Bagé</div><div class="meta">02/03/2024 · Gaúcho · QG: Rafa · Assador: Rolim</div></div><div style="text-align:right;"><span class="result-badge Vitória">Vitória</span><div><button class="del-link" data-id="5">excluir</button></div></div></div><div class="history-names">6 presentes: Bryan, Caio, Orelha, Rafa, Ricardo, Rolim</div></div><div class="history-item"><div class="top"><div><div class="matchup">Inter x Gremio</div><div class="meta">25/02/2024 · Gaúcho · QG: Diogo · Assador: Fofo</div></div><div style="text-align:right;"><span class="result-badge Derrota">Derrota</span><div><button class="del-link" data-id="4">excluir</button></div></div></div><div class="history-names">21 presentes: Bryan, Caio, Caveira, Diogo, Drugo, Fabio, Fofo, Matheus, Mutuca, Orelha, Pedrinho, Pereira, Rafa, Rolim, Thales, Vi, Gusmão, Henrique, Ricardo, Baiaca, Pedro</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Santa Cruz</div><div class="meta">17/02/2024 · Gaúcho · QG: — · Assador: —</div></div><div style="text-align:right;"><span class="result-badge Vitória">Vitória</span><div><button class="del-link" data-id="3">excluir</button></div></div></div><div class="history-names">11 presentes: Bryan, Caio, Caveira, Gusmão, Matheus, Orelha, Pedrinho, Pereira, Rafa, Rolim, Sperotto</div></div><div class="history-item"><div class="top"><div><div class="matchup">Avenida x Grêmio</div><div class="meta">02/02/2024 · Gaúcho · QG: Caveira · Assador: Caveira</div></div><div style="text-align:right;"><span class="result-badge Vitória">Vitória</span><div><button class="del-link" data-id="2">excluir</button></div></div></div><div class="history-names">18 presentes: Baiaca, Bosa, Bryan, Caio, Caveira, Diogo, Fabio, Fofo, Luciano, Matheus, Mutuca, Orelha, Pereira, Rafa, Ricardo, Rolim, Storck, Vi</div></div><div class="history-item"><div class="top"><div><div class="matchup">Gremio x Juventude</div><div class="meta">31/01/2024 · Gaúcho · QG: Bryan · Assador: Rolim</div></div><div style="text-align:right;"><span class="result-badge Vitória">Vitória</span><div><button class="del-link" data-id="1">excluir</button></div></div></div><div class="history-names">14 presentes: Bryan, Caveira, Diogo, Fabio, Gusmão, Matheus, Mutuca, Orelha, Pedrinho, Rafa, Rolim, Sperotto, Storck, Vi</div></div><div class="history-item"><div class="top"><div><div class="matchup">inter x Gremio</div><div class="meta">sem data · Copa do Brasil · QG: Diogo · Assador: Diogo</div></div><div style="text-align:right;"><span class="result-badge Empate">Empate</span><div><button class="del-link" data-id="121">excluir</button></div></div></div><div class="history-names">11 presentes: Diogo, Bryan, Storck, Fofo, Rolim, Baiaca, Orelha, Luciano, Ricardo, Mauricio, Fabio</div></div></div>
+  </section>
+
+</main>
+
+<div class="toast" id="toast">Edição liberada ✅</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script id="game-data" type="application/json">[{"id":1,"date":"31/01/2024","matchup":"Gremio x Juventude","result":"Vitória","championship":"Gaúcho","qg":"Bryan","assador":"Rolim","quorum":14,"attendees":["Bryan","Caveira","Diogo","Fabio","Gusmão","Matheus","Mutuca","Orelha","Pedrinho","Rafa","Rolim","Sperotto","Storck","Vi"]},{"id":2,"date":"02/02/2024","matchup":"Avenida x Grêmio","result":"Vitória","championship":"Gaúcho","qg":"Caveira","assador":"Caveira","quorum":18,"attendees":["Baiaca","Bosa","Bryan","Caio","Caveira","Diogo","Fabio","Fofo","Luciano","Matheus","Mutuca","Orelha","Pereira","Rafa","Ricardo","Rolim","Storck","Vi"]},{"id":3,"date":"17/02/2024","matchup":"Gremio x Santa Cruz","result":"Vitória","championship":"Gaúcho","qg":"","assador":"","quorum":11,"attendees":["Bryan","Caio","Caveira","Gusmão","Matheus","Orelha","Pedrinho","Pereira","Rafa","Rolim","Sperotto"]},{"id":4,"date":"25/02/2024","matchup":"Inter x Gremio","result":"Derrota","championship":"Gaúcho","qg":"Diogo","assador":"Fofo","quorum":21,"attendees":["Bryan","Caio","Caveira","Diogo","Drugo","Fabio","Fofo","Matheus","Mutuca","Orelha","Pedrinho","Pereira","Rafa","Rolim","Thales","Vi","Gusmão","Henrique","Ricardo","Baiaca","Pedro"]},{"id":5,"date":"02/03/2024","matchup":"Gremio x Guarani Bagé","result":"Vitória","championship":"Gaúcho","qg":"Rafa","assador":"Rolim","quorum":6,"attendees":["Bryan","Caio","Orelha","Rafa","Ricardo","Rolim"]},{"id":6,"date":"10/03/2024","matchup":"Gremio x Brasil Pel","result":"Vitória","championship":"Gaúcho","qg":"Fofo","assador":"Fofo","quorum":14,"attendees":["Caveira","Diogo","Fabio","Orelha","Rafa","Ricardo","Rolim","Fofo","Pedrinho","Pereira","Drugo","Storck","Mauricio","Gusmão"]},{"id":7,"date":"16/03/2024","matchup":"Caxias x Gremio","result":"Vitória","championship":"Gaúcho","qg":"Mutuca","assador":"Rolim","quorum":11,"attendees":["Mutuca","Rolim","Bryan","Pereira","Baiaca","Storck","Rafa","Cyro","Ricardo","Pedrinho","Luciano"]},{"id":8,"date":"26/03/2024","matchup":"Gremio x Caxias","result":"Vitória","championship":"Gaúcho","qg":"Caio","assador":"Rolim","quorum":17,"attendees":["Mutuca","Rolim","Bryan","Pereira","Caio","Storck","Ricardo","Luciano","Mauricio","Gusmão","Fabio","Fofo","Matheus","Sperotto","Drugo","Thales","Jeff"]},{"id":9,"date":"30/03/2024","matchup":"Juventude x Gremio","result":"Empate","championship":"Gaúcho","qg":"Fofo","assador":"Fofo","quorum":11,"attendees":["Rolim","Bryan","Pereira","Caio","Storck","Mauricio","Fabio","Fofo","Sperotto","Bosa","Baiaca"]},{"id":10,"date":"02/04/2024","matchup":"Strongest x Gremio","result":"Derrota","championship":"Libertadores","qg":"Caveira","assador":"Storck","quorum":23,"attendees":["Rolim","Bryan","Rafa","Pereira","Storck","Ricardo","Orelha","Fabio","Henrique","Pedrinho","Mutuca","Matheus","Gusmão","Fofo","Caveira","Sperotto","Diogo","Thales","Vi","Mauricio","Luciano","Drugo","Bosa"]},{"id":11,"date":"06/04/2024","matchup":"Gremio x Juventude","result":"Vitória","championship":"Gaúcho","qg":"Bryan","assador":"Storck","quorum":18,"attendees":["Rolim","Bryan","Rafa","Pereira","Storck","Ricardo","Orelha","Drugo","Bosa","Pedrinho","Mutuca","Matheus","Mauricio","Fofo","Caveira","Sperotto","Baiaca","Pedro"]},{"id":12,"date":"09/04/2024","matchup":"Gremio x Huachiopato","result":"Derrota","championship":"Libertadores","qg":"Orelha","assador":"Rolim","quorum":18,"attendees":["Rolim","Bryan","Rafa","Pereira","Storck","Ricardo","Orelha","Fabio","Drugo","Pedrinho","Mutuca","Matheus","Gusmão","Fofo","Caveira","Mauricio","Caio","Pedro"]},{"id":13,"date":"14/04/2024","matchup":"Vasco x Gremio","result":"Derrota","championship":"Brasileirão","qg":"Rafa","assador":"Rafa","quorum":9,"attendees":["Bryan","Baiaca","Rafa","Ricardo","Orelha","Mauricio","Caveira","Vi","Matheus"]},{"id":14,"date":"17/04/2024","matchup":"Gremio x Athletico PR","result":"Vitória","championship":"Brasileirão","qg":"Mutuca","assador":"Mutuca","quorum":4,"attendees":["Mutuca","Rolim","Storck","Caveira"]},{"id":15,"date":"20/04/2024","matchup":"Gremio x Cuiaba","result":"Vitória","championship":"Brasileirão","qg":"Fabio","assador":"Diogo","quorum":3,"attendees":["Rolim","Fabio","Diogo"]},{"id":16,"date":"23/04/2024","matchup":"Estudiantes x Gremio","result":"Vitória","championship":"Libertadores","qg":"Rafa","assador":"Rolim","quorum":16,"attendees":["Rolim","Fabio","Diogo","Vi","Ricardo","Matheus","Orelha","Rafa","Pedro","Pereira","Luciano","Fofo","Mauricio","Gusmão","Jeff","Mutuca"]},{"id":17,"date":"30/04/2024","matchup":"Operario x Gremio","result":"Empate","championship":"Copa do Brasil","qg":"Caio","assador":"Ricardo","quorum":10,"attendees":["Rolim","Fabio","Diogo","Caveira","Ricardo","Ricardo","Pedro","Mutuca","Caio","Gusmão"]},{"id":18,"date":"29/05/2024","matchup":"Gremio x Strongest","result":"Vitória","championship":"Libertadores","qg":"Henrique","assador":"Matheus","quorum":15,"attendees":["Diogo","Vi","Ricardo","Matheus","Caio","Gusmão","Bryan","Baiaca","Pereira","Storck","Luciano","Jeff","Pedrinho","Henrique","Thales"]},{"id":19,"date":"01/06/2024","matchup":"Gremio x Redbull","result":"Empate","championship":"Brasileirão","qg":"Bryan","assador":"Storck","quorum":12,"attendees":["Rolim","Fabio","Bryan","Pereira","Storck","Caio","Matheus","Orelha","Rafa","Mauricio","Ricardo","Storck"]},{"id":20,"date":"04/06/2024","matchup":"Huachiupato x Gremio","result":"Vitória","championship":"Libertadores","qg":"Diogo","assador":"Caveira","quorum":18,"attendees":["Rolim","Pedro","Diogo","Pereira","Storck","Ricardo","Orelha","Fabio","Mauricio","Pedrinho","Vi","Matheus","Gusmão","Fofo","Caveira","Luciano","Jeff","Henrique"]},{"id":21,"date":"13/06/2024","matchup":"Flamengo x Grêmio","result":"Derrota","championship":"Brasileirão","qg":"Bryan","assador":"Storck","quorum":6,"attendees":["Bryan","Pereira","Storck","Baiaca","Henrique","Pedro"]},{"id":22,"date":"16/06/2024","matchup":"Gremio x Botafogo","result":"Derrota","championship":"Brasileirão","qg":"Fofo","assador":"Fofo","quorum":2,"attendees":["Fofo","Fabio"]},{"id":23,"date":"19/06/2024","matchup":"Fortaleza x Grêmio","result":"Derrota","championship":"Brasileirão","qg":"Rolim","assador":"Rolim","quorum":7,"attendees":["Rolim","Caveira","Storck","Gusmão","Diogo","Pereira","Ricardo"]},{"id":24,"date":"22/06/2024","matchup":"Grêmio x Inter","result":"Derrota","championship":"Brasileirão","qg":"Caveira","assador":"Ricardo","quorum":13,"attendees":["Rolim","Caveira","Pereira","Ricardo","Baiaca","Henrique","Bryan","Fabio","Vi","Matheus","Caio","Orelha","Rafa"]},{"id":25,"date":"30/06/2024","matchup":"Gremio x Fluminense","result":"Vitória","championship":"Brasileirão","qg":"Rolim","assador":"Fofo","quorum":15,"attendees":["Fofo","Fabio","Rolim","Caveira","Pereira","Ricardo","Baiaca","Bryan","Caio","Gusmão","Mauricio","Pedrinho","Storck","Diogo","Sperotto"]},{"id":26,"date":"04/07/2024","matchup":"Gremio x Palmeiras","result":"Empate","championship":"Brasileirão","qg":"Rolim","assador":"Rolim","quorum":6,"attendees":["Rolim","Caveira","Pereira","Fabio","Diogo","Pedrinho"]},{"id":27,"date":"07/07/2024","matchup":"Juventude x Gremio","result":"Derrota","championship":"Brasileirão","qg":"Caveira","assador":"Fabio","quorum":10,"attendees":["Rolim","Caveira","Fabio","Caio","Storck","Fofo","Matheus","Baiaca","Orelha","Rafa"]},{"id":28,"date":"10/07/2024","matchup":"Gremio x Cruzeiro","result":"Derrota","championship":"Brasileirão","qg":"Gusmão","assador":"Vi","quorum":17,"attendees":["Rolim","Caveira","Fabio","Caio","Storck","Fofo","Matheus","Orelha","Rafa","Bryan","Gusmão","Mauricio","Pedrinho","Pereira","Ricardo","Vi","Luciano"]},{"id":29,"date":"14/07/2024","matchup":"Gremio x Operario","result":"Vitória","championship":"Copa do Brasil","qg":"Rafa","assador":"Rafa","quorum":10,"attendees":["Rolim","Caio","Matheus","Orelha","Rafa","Bryan","Baiaca","Mauricio","Ricardo","Diogo"]},{"id":30,"date":"17/07/2024","matchup":"São Paulo x Gremio","result":"Derrota","championship":"Brasileirão","qg":"Orelha","assador":"Pedrinho","quorum":12,"attendees":["Rolim","Matheus","Orelha","Rafa","Caveira","Pereira","Gusmão","Pedrinho","Pedro","Diogo","Storck","Baiaca"]},{"id":31,"date":"21/07/2024","matchup":"Gremio x Vitoria","result":"Vitória","championship":"Brasileirão","qg":"Fofo","assador":"Fofo","quorum":7,"attendees":["Fofo","Rolim","Pereira","Diogo","Fabio","Bryan","Ricardo"]},{"id":32,"date":"25/07/2024","matchup":"Corinthians x Gremio","result":"Empate","championship":"Brasileirão","qg":"Diogo","assador":"Rolim","quorum":15,"attendees":["Rolim","Caveira","Fabio","Caio","Storck","Pereira","Diogo","Ricardo","Bryan","Mauricio","Orelha","Matheus","Pedrinho","Pedro","Gusmão"]},{"id":33,"date":"28/07/2024","matchup":"Gremio x Vasco","result":"Vitória","championship":"Brasileirão","qg":"Rafa","assador":"Storck","quorum":10,"attendees":["Rolim","Caveira","Fabio","Caio","Storck","Fofo","Mauricio","Pedrinho","Orelha","Rafa"]},{"id":34,"date":"31/07/2024","matchup":"Corinthians x Gremio","result":"Empate","championship":"Copa do Brasil","qg":"Caveira","assador":"Caveira","quorum":14,"attendees":["Rolim","Caveira","Pedrinho","Gusmão","Matheus","Orelha","Rafa","Storck","Pereira","Diogo","Ricardo","Caio","Henrique","Pedro"]},{"id":35,"date":"04/08/2024","matchup":"Athletico x Gremio","result":"Vitória","championship":"Brasileirão","qg":"Pedrinho","assador":"Pedrinho","quorum":6,"attendees":["Pedrinho","Caveira","Pereira","Sperotto","Cyro","Mutuca"]},{"id":36,"date":"07/08/2024","matchup":"Gremio x Corinthians","result":"Derrota","championship":"Copa do Brasil","qg":"Diogo","assador":"Matheus","quorum":17,"attendees":["Pedrinho","Caveira","Pereira","Mutuca","Rolim","Bryan","Ricardo","Diogo","Gusmão","Rafa","Caio","Henrique","Mauricio","Storck","Fabio","Thales","Matheus"]},{"id":37,"date":"13/08/2024","matchup":"Gremio x Fluminense","result":"Vitória","championship":"Libertadores","qg":"Caio","assador":"Fofo","quorum":16,"attendees":["Pedrinho","Caveira","Pereira","Mutuca","Luciano","Jeff","Ricardo","Sperotto","Orelha","Fofo","Caio","Baiaca","Mauricio","Matheus","Fabio","Thales"]},{"id":38,"date":"17/08/2024","matchup":"Gremio x Bahia","result":"Derrota","championship":"Brasileirão","qg":"Mutuca","assador":"Mutuca","quorum":7,"attendees":["Mutuca","Pedrinho","Caveira","Caio","Rafa","Baiaca","Matheus"]},{"id":39,"date":"20/08/2024","matchup":"Fluminense x Gremio","result":"Derrota","championship":"Libertadores","qg":"Orelha","assador":"Storck","quorum":18,"attendees":["Pedrinho","Sperotto","Pereira","Mutuca","Bryan","Ricardo","Diogo","Gusmão","Rafa","Caio","Henrique","Storck","Fabio","Matheus","Luciano","Jeff","Orelha","Vi"]},{"id":40,"date":"25/08/2024","matchup":"Criciuma x Gremio","result":"Vitória","championship":"Brasileirão","qg":"Mutuca","assador":"Baiaca","quorum":11,"attendees":["Pedrinho","Mutuca","Bryan","Ricardo","Rafa","Matheus","Orelha","Mauricio","Rolim","Caveira","Baiaca"]},{"id":41,"date":"01/09/2024","matchup":"Gremio x Atletico MG","result":"Derrota","championship":"Brasileirão","qg":"Fabio","assador":"Fofo","quorum":6,"attendees":["Fabio","Pedrinho","Caveira","Rolim","Fofo","Thales"]},{"id":42,"date":"15/09/2024","matchup":"RB x Gremio","result":"Empate","championship":"Brasileirão","qg":"Bryan","assador":"Pereira","quorum":12,"attendees":["Fabio","Pedrinho","Rolim","Thales","Orelha","Caio","Ricardo","Storck","Bryan","Pereira","Sperotto","Pedro"]},{"id":43,"date":"22/09/2024","matchup":"Gremio x Flamengo","result":"Vitória","championship":"Brasileirão","qg":"Caveira","assador":"Caveira","quorum":8,"attendees":["Mutuca","Orelha","Caveira","Rafa","Thales","Baiaca","Caio","Fabio"]},{"id":44,"date":"25/09/2024","matchup":"Gremio x Criciuma","result":"Derrota","championship":"Brasileirão","qg":"Orelha","assador":"Orelha","quorum":9,"attendees":["Caveira","Rafa","Caio","Gusmão","Orelha","Mutuca","Matheus","Pedro","Pereira"]},{"id":45,"date":"28/09/2024","matchup":"Botafogo x Gremio","result":"Empate","championship":"Brasileirão","qg":"Caveira","assador":"Caveira","quorum":2,"attendees":["Caveira","Rafa"]},{"id":46,"date":"04/10/2024","matchup":"Gremio x Fortaleza","result":"Vitória","championship":"Brasileirão","qg":"Rolim","assador":"Rolim","quorum":5,"attendees":["Rolim","Orelha","Gusmão","Storck","Caio"]},{"id":47,"date":"09/10/2024","matchup":"Atl MG x Gremio","result":"Derrota","championship":"Brasileirão","qg":"Rafa","assador":"Storck","quorum":10,"attendees":["Storck","Rafa","Fabio","Orelha","Diogo","Mutuca","Matheus","Gusmão","Henrique","Caio"]},{"id":48,"date":"19/10/2024","matchup":"Inter x Gremio","result":"Derrota","championship":"Brasileirão","qg":"Diogo","assador":"Diogo","quorum":15,"attendees":["Diogo","Storck","Rafa","Orelha","Mutuca","Caio","Rolim","Matheus","Pereira","Thales","Ricardo","Baiaca","Pedrinho","Caveira","Mauricio"]},{"id":49,"date":"01/11/2024","matchup":"Fluminense x Gremio","result":"Empate","championship":"Brasileirão","qg":"Rolim","assador":"Rolim","quorum":6,"attendees":["Rolim","Gusmão","Mutuca","Caveira","Mauricio","Fofo"]},{"id":50,"date":"08/11/2024","matchup":"Palmeiras x Gremio","result":"Derrota","championship":"Brasileirão","qg":"Rolim","assador":"Rolim","quorum":3,"attendees":["Rolim","Rafa","Baiaca"]},{"id":51,"date":"20/11/2024","matchup":"Gremio x Juventude","result":"Empate","championship":"Brasileirão","qg":"Bryan","assador":"Matheus","quorum":13,"attendees":["Bryan","Matheus","Rolim","Rafa","Gusmão","Mutuca","Caveira","Fabio","Orelha","Diogo","Pereira","Pedro","Duda"]},{"id":52,"date":"24/11/2024","matchup":"Cruzeiro x Gremio","result":"Empate","championship":"Brasileirão","qg":"Storck","assador":"Rolim","quorum":17,"attendees":["Matheus","Fabio","Pedrinho","Vi","Caveira","Rolim","Gusmão","Storck","Mutuca","Rafa","Diogo","Mauricio","Ricardo","Pereira","Orelha","Luciano","Thales"]},{"id":53,"date":"01/12/2024","matchup":"Gremio x São Paulo","result":"Vitória","championship":"Brasileirão","qg":"Mutuca","assador":"Mauricio","quorum":11,"attendees":["Mutuca","Fabio","Fofo","Rafa","Pedro","Caveira","Vicente","Gusmão","Orelha","Mauricio","Matheus"]},{"id":54,"date":"04/12/2024","matchup":"Vitoria x Gremio","result":"Empate","championship":"Brasileirão","qg":"Caveira","assador":"Caveira","quorum":3,"attendees":["Caveira","Gusmão","Pereira"]},{"id":55,"date":"08/12/2024","matchup":"Gremio x Corinthians","result":"Derrota","championship":"Brasileirão","qg":"Orelha","assador":"Storck","quorum":16,"attendees":["Caveira","Gusmão","Mutuca","Fabio","Rafa","Bryan","Matheus","Baiaca","Ricardo","Rolim","Orelha","Storck","Pedrinho","Fofo","Diogo","Mauricio"]},{"id":56,"date":"24/01/2025","matchup":"Brasil x Gremio","result":"Empate","championship":"Gaúcho","qg":"Bryan","assador":"Storck","quorum":12,"attendees":["Bryan","Caveira","Diogo","Fabio","Gusmão","Pereira","Mutuca","Storck","Pedrinho","Rafa","Rolim","Sperotto"]},{"id":57,"date":"05/02/2025","matchup":"Juventude x Gremio","result":"Derrota","championship":"Gaúcho","qg":"Orelha","assador":"Storck","quorum":8,"attendees":["Rolim","Gusmão","Diogo","Storck","Orelha","Pereira","Fabio","Rafa"]},{"id":58,"date":"08/02/2025","matchup":"Gremio x Inter","result":"Empate","championship":"Gaúcho","qg":"Caio","assador":"Rolim","quorum":10,"attendees":["Rolim","Caio","Bryan","Baiaca","Pedrinho","Rafa","Storck","Diogo","Fofo","Orelha"]},{"id":59,"date":"11/02/2025","matchup":"Gremio x Pelotas","result":"Vitória","championship":"Gaúcho","qg":"Fabio","assador":"Fabio","quorum":2,"attendees":["Fabio","Storck"]},{"id":60,"date":"19/02/2025","matchup":"São raimundo x Gremio","result":"Empate","championship":"Copa do Brasil","qg":"Diogo","assador":"Diogo","quorum":7,"attendees":["Diogo","Storck","Caveira","Fabio","Gusmão","Mutuca","Mauricio"]},{"id":61,"date":"22/02/2025","matchup":"Gremio x Juventude","result":"Vitória","championship":"Gaúcho","qg":"Baiaca","assador":"Baiaca","quorum":10,"attendees":["Baiaca","Rolim","Caio","Bryan","Fofo","Caveira","Pereira","Gusmão","Storck","Crippa"]},{"id":62,"date":"08/03/2025","matchup":"Gremio x Inter","result":"Derrota","championship":"Gaúcho","qg":"Gusmão","assador":"Storck","quorum":16,"attendees":["Gusmão","Rolim","Caveira","Storck","Pedrinho","Bryan","Diogo","Orelha","Fabio","Pereira","Baiaca","Crippa","Ricardo","Rafa","Thales","Mauricio"]},{"id":63,"date":"16/03/2025","matchup":"Inter x Gremio","result":"Empate","championship":"Gaúcho","qg":"Pedrinho","assador":"Crippa","quorum":7,"attendees":["Pedrinho","Crippa","Storck","Bryan","Orelha","Fabio","Baiaca"]},{"id":64,"date":"02/04/2025","matchup":"Sportivo Luqueno x Gremio","result":"Vitória","championship":"Sulamericana","qg":"Bryan","assador":"Storck","quorum":12,"attendees":["Bryan","Caveira","Diogo","Fabio","Gusmão","Crippa","Mutuca","Baiaca","Pedro","Henrique","Vi","Storck"]},{"id":65,"date":"05/04/2025","matchup":"Ceara x Gremio","result":"Derrota","championship":"Brasileirão","qg":"Rolim","assador":"Rolim","quorum":4,"attendees":["Rolim","Pedrinho","Pereira","Ricardo"]},{"id":66,"date":"08/04/2025","matchup":"Gremio x Atl grau","result":"Vitória","championship":"Sulamericana","qg":"Mutuca","assador":"Rolim","quorum":9,"attendees":["Rolim","Crippa","Storck","Bryan","Baiaca","Mutuca","Caio","Fabio","Barth"]},{"id":67,"date":"13/04/2025","matchup":"Gremio x Flamengo","result":"Derrota","championship":"Brasileirão","qg":"Caveira","assador":"Storck","quorum":13,"attendees":["Caveira","Rolim","Crippa","Storck","Bryan","Baiaca","Mutuca","Caio","Ricardo","Gusmão","Fofo","Diogo","Orelha"]},{"id":68,"date":"19/04/2025","matchup":"Gremio x Inter","result":"Empate","championship":"Brasileirão","qg":"Caio","assador":"Fofo","quorum":9,"attendees":["Caio","Mutuca","Pedrinho","Rafa","Mauricio","Rolim","Baiaca","Fofo","Orelha"]},{"id":69,"date":"24/04/2025","matchup":"Godoy x Gremio","result":"Empate","championship":"Sulamericana","qg":"Caio","assador":"Rafa","quorum":11,"attendees":["Caio","Rafa","Storck","Mutuca","Barth","Orelha","Baiaca","Fabio","Pedrinho","Caveira","Bryan"]},{"id":70,"date":"04/05/2025","matchup":"Gremio x Santos","result":"Vitória","championship":"Brasileirão","qg":"Orelha","assador":"Orelha","quorum":9,"attendees":["Orelha","Rafa","Ricardo","Rolim","Caveira","Baiaca","Caio","Mauricio","Gusmão"]},{"id":71,"date":"07/05/2025","matchup":"Atl grau x Gremio","result":"Empate","championship":"Sulamericana","qg":"Caveira","assador":"Mauricio","quorum":11,"attendees":["Caveira","Rolim","Pedrinho","Fabio","Matheus","Rafa","Orelha","Storck","Gusmão","Vi","Mauricio"]},{"id":72,"date":"13/05/2025","matchup":"Gremio x Godoy","result":"Empate","championship":"Sulamericana","qg":"Rolim","assador":"Rolim","quorum":5,"attendees":["Rolim","Mutuca","Caveira","Ricardo","Henrique"]},{"id":73,"date":"20/05/2025","matchup":"Gremio x CSA","result":"Empate","championship":"Copa do Brasil","qg":"Caveira","assador":"Storck","quorum":11,"attendees":["Caveira","Rolim","Pedrinho","Fabio","Fofo","Storck","Baiaca","Caio","Crippa","Mutuca","Pedro"]},{"id":74,"date":"13/07/2025","matchup":"Cruzeiro x Gremio","result":"Derrota","championship":"Brasileirão","qg":"Rolim","assador":"Fofo","quorum":5,"attendees":["Rolim","Fofo","Storck","Caveira","Mauricio"]},{"id":75,"date":"16/07/2025","matchup":"Allianza x Gremio","result":"Derrota","championship":"Sulamericana","qg":"Diogo","assador":"Storck","quorum":10,"attendees":["Diogo","Storck","Pedrinho","Fabio","Pedro","Gusmão","Bryan","Ricardo","Baiaca","Rolim"]},{"id":76,"date":"23/07/2025","matchup":"Gremio x Allianza","result":"Empate","championship":"Sulamericana","qg":"Rafa","assador":"Rafa","quorum":6,"attendees":["Rafa","Pedrinho","Fabio","Bryan","Caveira","Orelha"]},{"id":77,"date":"29/07/2025","matchup":"Gremio x Fortaleza","result":"Vitória","championship":"Brasileirão","qg":"Fabio","assador":"Rolim","quorum":7,"attendees":["Fabio","Rolim","Vi","Storck","Caveira","Mauricio","Gusmão"]},{"id":78,"date":"17/08/2025","matchup":"Atl Mg x Gremio","result":"Vitória","championship":"Brasileirão","qg":"Bryan","assador":"Baiaca","quorum":4,"attendees":["Bryan","Caveira","Baiaca","Pereira"]},{"id":79,"date":"23/08/2025","matchup":"Gremio x Ceara","result":"Empate","championship":"Brasileirão","qg":"Rolim","assador":"","quorum":4,"attendees":["Rolim","Caveira","Orelha","Rafa"]},{"id":80,"date":"31/08/2025","matchup":"Fla x Gremio","result":"Empate","championship":"Brasileirão","qg":"Bryan","assador":"","quorum":5,"attendees":["Bryan","Rolim","Baiaca","Pereira","Pedrinho"]},{"id":81,"date":"13/09/2025","matchup":"Gremio x Mirasol","result":"Derrota","championship":"Brasileirão","qg":"Diogo","assador":"Diogo","quorum":9,"attendees":["Diogo","Rolim","Caio","Caveira","Orelha","Pereira","Ricardo","Baiaca","Pedrinho"]},{"id":82,"date":"21/09/2025","matchup":"Inter x Gremio","result":"Vitória","championship":"Brasileirão","qg":"Fofo","assador":"Fofo","quorum":18,"attendees":["Fofo","Diogo","Rolim","Caio","Caveira","Orelha","Pereira","Ricardo","Baiaca","Pedrinho","Bryan","Mauricio","Mutuca","Storck","Henrique","Rafa","Fabio","Matheus"]},{"id":83,"date":"24/09/2025","matchup":"Gremio x Botafogo","result":"Empate","championship":"Brasileirão","qg":"Pereira","assador":"Pereira","quorum":3,"attendees":["Pereira","Caveira","Bryan"]},{"id":84,"date":"01/10/2025","matchup":"Santos x Gremio","result":"Empate","championship":"Brasileirão","qg":"Caveira","assador":"Caveira","quorum":8,"attendees":["Caveira","Pereira","Bryan","Rolim","Mutuca","Fabio","Pedro","Barth"]},{"id":85,"date":"04/10/2025","matchup":"RBB x Gremio","result":"Derrota","championship":"Brasileirão","qg":"Mutuca","assador":"Storck","quorum":12,"attendees":["Mutuca","Pereira","Bryan","Rolim","Ricardo","Orelha","Pedrinho","Rafa","Storck","Mauricio","Baiaca","Fofo"]},{"id":86,"date":"16/10/2025","matchup":"Gremio x SP","result":"Vitória","championship":"Brasileirão","qg":"Bryan","assador":"Fofo","quorum":14,"attendees":["Fofo","Pereira","Bryan","Rolim","Ricardo","Orelha","Pedrinho","Storck","Mauricio","Mutuca","Pedro","Caveira","Matheus","Caio"]},{"id":87,"date":"19/10/2025","matchup":"Bahia x Gremio","result":"Derrota","championship":"Brasileirão","qg":"Caveira","assador":"Caveira","quorum":3,"attendees":["Caveira","Rolim","Fofo"]},{"id":88,"date":"26/10/2025","matchup":"Gremio x Juventude","result":"Vitória","championship":"Brasileirão","qg":"Rafa","assador":"Storck","quorum":12,"attendees":["Rafa","Storck","Fofo","Pereira","Bryan","Rolim","Ricardo","Orelha","Pedrinho","Mauricio","Mutuca","Matheus"]},{"id":89,"date":"02/11/2025","matchup":"Corinthians x Gremio","result":"Derrota","championship":"Brasileirão","qg":"Orelha","assador":"Orelha","quorum":10,"attendees":["Orelha","Rafa","Storck","Pereira","Rolim","Caio","Mauricio","Vi","Baiaca","Pedrinho"]},{"id":90,"date":"05/11/2025","matchup":"Gremio x Cruzeiro","result":"Derrota","championship":"Brasileirão","qg":"Bryan","assador":"Caveira","quorum":9,"attendees":["Caveira","Bryan","Orelha","Storck","Pereira","Mauricio","Baiaca","Mutuca","Crippa"]},{"id":91,"date":"19/11/2025","matchup":"Gremio x Vasco","result":"Vitória","championship":"Brasileirão","qg":"Henrique","assador":"Matheus","quorum":14,"attendees":["Matheus","Henrique","Caveira","Bryan","Orelha","Storck","Pereira","Mauricio","Mutuca","Vi","Caio","Ricardo","Rolim","Diogo"]},{"id":92,"date":"25/11/2025","matchup":"Gremio x Palmeiras","result":"Vitória","championship":"Brasileirão","qg":"Mutuca","assador":"Rolim","quorum":7,"attendees":["Mutuca","Fofo","Rolim","Caveira","Gusmão","Fabio","Diogo"]},{"id":93,"date":"02/12/2025","matchup":"Gremio x Fluminense","result":"Derrota","championship":"Brasileirão","qg":"Bryan","assador":"Henrique","quorum":9,"attendees":["Bryan","Henrique","Mutuca","Caveira","Mauricio","Baiaca","Orelha","Rafa","Matheus"]},{"id":94,"date":"07/12/2025","matchup":"Sport x Gremio","result":"Vitória","championship":"Brasileirão","qg":"Diogo","assador":"Ricardo","quorum":17,"attendees":["Diogo","Ricardo","Rolim","Caveira","Storck","Bryan","Orelha","Rafa","Mauricio","Henrique","Luciano","Pereira","Pedrinho","Pedro","Vi","Caio","Fofo"]},{"id":95,"date":"14/01/2026","matchup":"Gremio x São José","result":"Derrota","championship":"Gaúcho","qg":"Bryan","assador":"Storck","quorum":8,"attendees":["Bryan","Storck","Rolim","Caveira","Mutuca","Gusmão","Caio","Baiaca"]},{"id":96,"date":"17/01/2026","matchup":"gremio x sao luiz","result":"Vitória","championship":"Gaúcho","qg":"Rolim","assador":"Rolim","quorum":4,"attendees":["Rolim","Pereira","Caveira","Gusmão"]},{"id":97,"date":"25/01/2026","matchup":"Inter x Gremio","result":"Derrota","championship":"Gaúcho","qg":"Gusmão","assador":"Gusmão","quorum":6,"attendees":["Gusmão","Henrique","Diogo","Baiaca","Pereira","Fofo"]},{"id":98,"date":"28/01/2026","matchup":"Flu x Gremio","result":"Derrota","championship":"Brasileirão","qg":"Rafa","assador":"Rafa","quorum":6,"attendees":["Rafa","Mutuca","Rolim","Caveira","Matheus","Fabio"]},{"id":99,"date":"07/02/2026","matchup":"Gremio x Noia","result":"Vitória","championship":"Gaúcho","qg":"Fofo","assador":"Fofo","quorum":4,"attendees":["Fofo","Rolim","Pedrinho","Pereira"]},{"id":100,"date":"11/02/2026","matchup":"Sp x Gremio","result":"Derrota","championship":"Brasileirão","qg":"Bryan","assador":"Rolim","quorum":8,"attendees":["Bryan","Rolim","Mutuca","Gusmão","Rafa","Diogo","Orelha","Fabio"]},{"id":101,"date":"22/02/2026","matchup":"Juventude x Gremio","result":"Vitória","championship":"Gaúcho","qg":"Orelha","assador":"Rafa","quorum":5,"attendees":["Orelha","Rafa","Fofo","Ricardo","Matheus"]},{"id":102,"date":"01/03/2026","matchup":"Gremio x inter","result":"Vitória","championship":"Gaúcho","qg":"Diogo","assador":"Diogo","quorum":17,"attendees":["Diogo","Rolim","Storck","Orelha","Caveira","Pedrinho","Fofo","Rafa","Mutuca","Ricardo","Matheus","Pereira","Baiaca","Fabio","Bryan","Caio","Gusmão"]},{"id":103,"date":"08/03/2026","matchup":"Inter x Gremio","result":"Empate","championship":"Gaúcho","qg":"Diogo","assador":"Diogo","quorum":21,"attendees":["Diogo","Rolim","Fofo","Matheus","Ricardo","Caveira","Pedrinho","Henrique","Fabio","Orelha","Pereira","Pedro","Jeff","Caio","Vi","Luciano","Baiaca","Storck","Thales","Gusmão","Mauricio"]},{"id":104,"date":"12/03/2026","matchup":"Gremio x RB","result":"Empate","championship":"Brasileirão","qg":"Caveira","assador":"Rolim","quorum":2,"attendees":["Caveira","Rolim"]},{"id":105,"date":"19/03/2026","matchup":"Gremio x Vitoria","result":"Vitória","championship":"Brasileirão","qg":"Orelha","assador":"Orelha","quorum":5,"attendees":["Orelha","Mauricio","Fabio","Rolim","Gusmão"]},{"id":106,"date":"22/03/2026","matchup":"Vasco x Gremio","result":"Derrota","championship":"Brasileirão","qg":"Mutuca","assador":"Rolim","quorum":11,"attendees":["Mutuca","Rolim","Orelha","Diogo","Matheus","Pedrinho","Henrique","Vi","Bryan","Storck","Mauricio"]},{"id":107,"date":"05/04/2026","matchup":"Gremio x Remo","result":"Empate","championship":"Brasileirão","qg":"Bryan","assador":"Storck","quorum":3,"attendees":["Bryan","Storck","Mutuca"]},{"id":108,"date":"08/04/2026","matchup":"Montevideo x Gremio","result":"Derrota","championship":"Sulamericana","qg":"Rafa","assador":"Rolim","quorum":8,"attendees":["Rafa","Rolim","Caveira","Mutuca","Storck","Orelha","Gusmão","Fabio"]},{"id":109,"date":"11/04/2026","matchup":"Inter x Gremio","result":"Empate","championship":"Brasileirão","qg":"Diogo","assador":"Matheus","quorum":10,"attendees":["Diogo","Matheus","Rolim","Fofo","Caveira","Gusmão","Storck","Pereira","Mauricio","Pedrinho"]},{"id":110,"date":"21/04/2026","matchup":"Gremio x Confiança","result":"Vitória","championship":"Copa do Brasil","qg":"Orelha","assador":"Orelha","quorum":5,"attendees":["Orelha","Fofo","Caveira","Storck","Cyro"]},{"id":111,"date":"29/04/2026","matchup":"Palestino x Gremio","result":"Empate","championship":"Sulamericana","qg":"Caveira","assador":"Caveira","quorum":5,"attendees":["Caveira","Rolim","Rafa","Mutuca","Orelha"]},{"id":112,"date":"14/05/2026","matchup":"Confiança x Gremio","result":"Vitória","championship":"Copa do Brasil","qg":"Rafa","assador":"Rafa","quorum":11,"attendees":["Rafa","Caveira","Rolim","Mutuca","Orelha","Bryan","Gusmão","Pereira","Mauricio","Fabio","Matheus"]},{"id":113,"date":"17/05/2026","matchup":"Bahia x Gremio","result":"Empate","championship":"Brasileirão","qg":"Pereira","assador":"Pereira","quorum":3,"attendees":["Pereira","Caveira","Rolim"]},{"id":114,"date":"20/05/2026","matchup":"Gremio x Palestino","result":"Vitória","championship":"Sulamericana","qg":"Mutuca","assador":"Rolim","quorum":6,"attendees":["Mutuca","Caveira","Rolim","Orelha","Fabio","Ricardo"]},{"id":115,"date":"26/05/2026","matchup":"Gremio x Montevideo","result":"Empate","championship":"Sulamericana","qg":"Ricardo","assador":"Ricardo","quorum":6,"attendees":["Ricardo","Caveira","Vi","Diogo","Matheus","Mutuca"]},{"id":116,"date":"17/07/2026","matchup":"Mirassol x Gremio","result":"Derrota","championship":"Brasileirão","qg":"Baiaca","assador":"Baiaca","quorum":9,"attendees":["Baiaca","Orelha","Caveira","Mutuca","Bryan","Rafa","Gusmão","Storck","Diogo"]},{"id":117,"date":"23/07/2026","matchup":"Bolívar x Grêmio","result":"Derrota","championship":"Sulamericana","qg":"Fabio","assador":"Rolim","quorum":3,"attendees":["Fabio","Rolim","Storck"]},{"id":118,"date":"26/07/2026","matchup":"Gremio x fluminense","result":"Empate","championship":"Brasileirão","qg":"Fofo","assador":"Fofo","quorum":4,"attendees":["Fofo","Rolim","Fabio","Gusmão"]},{"id":119,"date":"05/08/2026","matchup":"Grêmio x mirassol","result":"Vitória","championship":"Copa do Brasil","qg":"Rolim","assador":"Rolim","quorum":9,"attendees":["Rolim","Gusmão","Pedrinho","Matheus","Rafa","Caveira","Orelha","Fabio","Fofo"]},{"id":120,"date":"23/08/2026","matchup":"Rb x Grêmio","result":"Derrota","championship":"Brasileirão","qg":"Caveira","assador":"Storck","quorum":13,"attendees":["Gusmão","Vi","Matheus","Rafa","Caveira","Orelha","Fabio","Bryan","Pereira","Mauricio","Storck","Baiaca","Ricardo"]},{"id":121,"date":"","matchup":"inter x Gremio","result":"Empate","championship":"Copa do Brasil","qg":"Diogo","assador":"Diogo","quorum":11,"attendees":["Diogo","Bryan","Storck","Fofo","Rolim","Baiaca","Orelha","Luciano","Ricardo","Mauricio","Fabio"]},{"id":122,"date":"27/08/2026","matchup":"Inter x Grêmio","result":"Empate","championship":"Copa do Brasil","qg":"Diogo","assador":"Diogo","quorum":11,"attendees":["Diogo","Bryan","Storck","Fofo","Rolim","Baiaca","Orelha","Luciano","Ricardo","Mauricio","Fabio"]},{"id":123,"date":"03/09/2026","matchup":"Grêmio x inter","result":"Vitória","championship":"Copa do Brasil","qg":"Diogo","assador":"Diogo","quorum":15,"attendees":["Diogo","Rolim","Baiaca","Gusmão","Bryan","Matheus","Rafa","Ricardo","Jeff","Luciano","Orelha","Fabio","Fofo","Pedro","Vi"]},{"id":124,"date":"16/09/2026","matchup":"Botafogo x Grêmio","result":"Derrota","championship":"Brasileirão","qg":"Pereira","assador":"Pereira","quorum":8,"attendees":["Mutuca","Caveira","Fabio","Pereira","Vi","Henrique","Bryan","Gusmão"]},{"id":125,"date":"20/09/2026","matchup":"Grêmio x Palmeiras","result":"Empate","championship":"Brasileirão","qg":"Henrique","assador":"Henrique","quorum":2,"attendees":["Henrique","Pedrinho"]}]</script>
+<script>
+(function(){
+  var state = { games: JSON.parse(document.getElementById('game-data').textContent) };
+  var claudeArtifact = null, claudeDownloads = null;
+
+  function initCapabilities() {
+    if (window.claude && window.claude.use) {
+      window.claude.use('artifact').then(function(a){ claudeArtifact = a; }).catch(function(){});
+      window.claude.use('downloads').then(function(d){ claudeDownloads = d; }).catch(function(){});
+    }
+  }
+  initCapabilities();
+
+  function showToast(msg) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(function(){ t.classList.remove('show'); }, 2200);
+  }
+
+  function parseDateParts(d) {
+    if (!d) return null;
+    var m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(d.trim());
+    if (!m) return null;
+    return { day: m[1], month: m[2], year: m[3] };
+  }
+  function dateToISO(d) {
+    var p = parseDateParts(d);
+    if (!p) return '';
+    return p.year + '-' + p.month + '-' + p.day;
+  }
+  function isoToBR(iso) {
+    if (!iso) return '';
+    var parts = iso.split('-');
+    if (parts.length !== 3) return '';
+    return parts[2] + '/' + parts[1] + '/' + parts[0];
+  }
+  function getYear(d) {
+    var p = parseDateParts(d);
+    return p ? p.year : null;
+  }
+  function sortKey(g) {
+    var p = parseDateParts(g.date);
+    if (!p) return '0000-00-00-' + String(g.id).padStart(4,'0');
+    return p.year + '-' + p.month + '-' + p.day + '-' + String(g.id).padStart(4,'0');
+  }
+
+  function getRoster() {
+    var set = {};
+    state.games.forEach(function(g){
+      (g.attendees||[]).forEach(function(n){ set[n]=true; });
+      if (g.qg) set[g.qg]=true;
+      if (g.assador) set[g.assador]=true;
+    });
+    return Object.keys(set).sort(function(a,b){return a.localeCompare(b,'pt-BR');});
+  }
+  function getChampionships() {
+    var set = {};
+    state.games.forEach(function(g){ if (g.championship) set[g.championship]=true; });
+    return Object.keys(set).sort();
+  }
+  function getSeasons() {
+    var set = {};
+    state.games.forEach(function(g){ var y = getYear(g.date); if (y) set[y]=true; });
+    return Object.keys(set).sort();
+  }
+
+  function persist() {
+    document.getElementById('game-data').textContent = JSON.stringify(state.games);
+    if (claudeArtifact) {
+      var html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+      claudeArtifact.publish(html).catch(function(err){
+        console.error('publish failed', err);
+        showToast('⚠️ Não deu pra salvar agora, tente de novo');
+      });
+    }
+  }
+
+  // ---------- Tabs ----------
+  document.querySelectorAll('.tab-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
+      document.querySelectorAll('.tabpanel').forEach(function(p){p.classList.remove('active');});
+      btn.classList.add('active');
+      document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+      if (btn.dataset.tab === 'dashboard') renderDashboard();
+      if (btn.dataset.tab === 'historico') renderHistory();
+    });
+  });
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+  // ---------- Dashboard ----------
+  var selectedSeasons = null; // null = not yet initialized
+
+  function renderSeasonOptions() {
+    var seasons = getSeasons();
+    if (selectedSeasons === null) {
+      selectedSeasons = {};
+      var latest = seasons.length ? seasons[seasons.length-1] : null;
+      if (latest) selectedSeasons[latest] = true;
+    }
+    // drop selections for seasons that no longer exist
+    Object.keys(selectedSeasons).forEach(function(y){
+      if (y !== 'all' && seasons.indexOf(y) === -1) delete selectedSeasons[y];
+    });
+    var picker = document.getElementById('season-picker');
+    var allActive = !!selectedSeasons.all;
+    var chips = ['<button type="button" class="season-chip'+(allActive?' active':'')+'" data-season="all">Todas</button>'];
+    seasons.forEach(function(y){
+      var active = allActive || !!selectedSeasons[y];
+      chips.push('<button type="button" class="season-chip'+(active?' active':'')+'" data-season="'+y+'">'+y+'</button>');
+    });
+    picker.innerHTML = chips.join('');
+    picker.querySelectorAll('.season-chip').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var y = btn.dataset.season;
+        if (y === 'all') {
+          selectedSeasons = {all: true};
+        } else {
+          delete selectedSeasons.all;
+          if (selectedSeasons[y]) delete selectedSeasons[y]; else selectedSeasons[y] = true;
+          if (Object.keys(selectedSeasons).length === 0) {
+            var latest = seasons.length ? seasons[seasons.length-1] : null;
+            if (latest) selectedSeasons[latest] = true;
+          }
+        }
+        renderSeasonOptions();
+        renderDashboard();
+      });
+    });
+  }
+
+  function activeSeasonList() {
+    var seasons = getSeasons();
+    if (!selectedSeasons || selectedSeasons.all) return seasons;
+    return seasons.filter(function(y){ return !!selectedSeasons[y]; });
+  }
+
+  function scopedGames() {
+    var active = activeSeasonList();
+    var seasons = getSeasons();
+    if (active.length === seasons.length) return state.games;
+    return state.games.filter(function(g){ return active.indexOf(getYear(g.date)) >= 0; });
+  }
+
+  function renderDashboard() {
+    var games = scopedGames();
+    var active = activeSeasonList();
+    var seasons = getSeasons();
+    var label = (active.length === seasons.length) ? 'Todas as temporadas' :
+      (active.length === 1 ? 'Temporada ' + active[0] : 'Temporadas ' + active.join(', '));
+    document.getElementById('dash-subtitle').textContent =
+      label + ' · gerado em ' + new Date().toLocaleDateString('pt-BR');
+
+    document.getElementById('sum-jogos').textContent = games.length;
+
+    var v=0,e=0,d=0,decided=0;
+    games.forEach(function(g){
+      if (g.result==='Vitória'){v++;decided++;}
+      else if (g.result==='Empate'){e++;decided++;}
+      else if (g.result==='Derrota'){d++;decided++;}
+    });
+    var pctV = decided ? Math.round(v/decided*100) : 0;
+    var pctE = decided ? Math.round(e/decided*100) : 0;
+    var pctD = decided ? Math.round(d/decided*100) : 0;
+    document.getElementById('sum-aproveitamento').textContent = pctV + '%';
+
+    var bars = document.getElementById('aproveitamento-bars');
+    bars.innerHTML =
+      barRow('Vitórias', v, pctV, 'v') +
+      barRow('Empates', e, pctE, 'e') +
+      barRow('Derrotas', d, pctD, 'd');
+
+    var quorumGames = games.filter(function(g){return g.quorum;});
+    var mediaGeral = quorumGames.length ? (quorumGames.reduce(function(s,g){return s+g.quorum;},0)/quorumGames.length) : 0;
+    document.getElementById('sum-media').textContent = mediaGeral.toFixed(1);
+
+    // Ranking
+    function statsFor(gamesSubset) {
+      var s = {};
+      gamesSubset.forEach(function(g){
+        (g.attendees||[]).forEach(function(n){
+          s[n] = s[n] || {name:n, presencas:0, qg:0, assador:0};
+          s[n].presencas++;
+        });
+        if (g.qg) { s[g.qg] = s[g.qg] || {name:g.qg, presencas:0, qg:0, assador:0}; s[g.qg].qg++; }
+        if (g.assador) { s[g.assador] = s[g.assador] || {name:g.assador, presencas:0, qg:0, assador:0}; s[g.assador].assador++; }
+      });
+      return s;
+    }
+    var stats = statsFor(games);
+    var totalJogos = games.length || 1;
+
+    // Year-over-year frequency column: only meaningful when exactly one season is selected
+    // and the previous season has data. % = (freq_atual - freq_anterior) / freq_atual
+    var yoyHeader = document.getElementById('yoy-col-header');
+    var yoyHint = document.getElementById('yoy-hint');
+    var yoyStats = null, prevSeason = null, yoyN = 0;
+    if (active.length === 1) {
+      var curSeason = active[0];
+      var idx = seasons.indexOf(curSeason);
+      if (idx > 0) {
+        prevSeason = seasons[idx-1];
+        yoyN = games.length;
+        var prevAll = state.games.filter(function(g){ return getYear(g.date) === prevSeason; });
+        prevAll.sort(function(a,b){
+          function key(g){ var p = parseDateParts(g.date); return p ? (p.year+'-'+p.month+'-'+p.day) : '9999-99-99'; }
+          return key(a).localeCompare(key(b));
+        });
+        var prevGames = prevAll.slice(0, yoyN);
+        yoyStats = statsFor(prevGames);
+      }
+    }
+    if (prevSeason) {
+      yoyHeader.textContent = active[0].slice(-2) + ' x ' + prevSeason.slice(-2);
+      yoyHint.style.display = 'block';
+      yoyHint.textContent = 'A coluna "' + active[0].slice(-2) + ' x ' + prevSeason.slice(-2) + '" compara a presença de cada pessoa nos ' + yoyN + ' jogos desta temporada com a presença nos primeiros ' + yoyN + ' jogos (na mesma ordem cronológica) da temporada anterior, como (jogos deste ano ÷ jogos do ano anterior − 1).';
+    } else {
+      yoyHeader.textContent = '';
+      yoyHint.style.display = 'none';
+    }
+
+    function yoyValue(s) {
+      if (!prevSeason) return 0;
+      var prevCount = yoyStats[s.name] ? yoyStats[s.name].presencas : 0;
+      if (s.presencas === 0 && prevCount === 0) return -Infinity;
+      if (prevCount === 0) return s.presencas * 100;
+      return Math.round((s.presencas / prevCount - 1) * 100);
+    }
+
+    // Critérios de ordenação, nesta ordem:
+    // 1) mais presenças na frente; 2) quem já fez QG/assador (False) na frente de quem nunca fez (True);
+    // 3) maior soma QG+Assador na frente; 4) maior % 26x25 na frente
+    var list = Object.values(stats).sort(function(a, b){
+      if (b.presencas !== a.presencas) return b.presencas - a.presencas;
+      var aNever = (a.qg + a.assador) === 0;
+      var bNever = (b.qg + b.assador) === 0;
+      if (aNever !== bNever) return aNever ? 1 : -1;
+      var aTotal = a.qg + a.assador, bTotal = b.qg + b.assador;
+      if (bTotal !== aTotal) return bTotal - aTotal;
+      return yoyValue(b) - yoyValue(a);
+    });
+
+    var rankBody = document.getElementById('ranking-body');
+    rankBody.innerHTML = list.slice(0,30).map(function(s, idx){
+      var pct = Math.round(s.presencas/totalJogos*100);
+      var total = s.qg + s.assador;
+      var neverDid = total === 0;
+      var yoyCell = '';
+      if (prevSeason) {
+        var prevCount = yoyStats[s.name] ? yoyStats[s.name].presencas : 0;
+        if (s.presencas === 0 && prevCount === 0) {
+          yoyCell = '-';
+        } else if (prevCount === 0) {
+          yoyCell = '+' + (s.presencas * 100) + '%';
+        } else {
+          var diffPct = Math.round((s.presencas / prevCount - 1) * 100);
+          yoyCell = (diffPct > 0 ? '+' : '') + diffPct + '%';
+        }
+      }
+      return '<tr class="rank-'+(idx+1)+' '+(idx<12?'row-top':'row-rest')+'">'+
+        '<td class="num rank-num">'+(idx+1)+'</td>'+
+        '<td>'+escapeHtml(s.name)+'</td>'+
+        '<td class="num">'+s.presencas+'</td>'+
+        '<td class="num">'+pct+'%</td>'+
+        '<td class="num">'+(prevSeason ? yoyCell : '')+'</td>'+
+        '<td class="num">'+total+'</td>'+
+        '<td class="num '+(neverDid?'bool-no':'bool-yes')+'">'+(neverDid?'True':'False')+'</td>'+
+      '</tr>';
+    }).join('');
+
+    // Aproveitamento por QG (retrospecto do Grêmio nos jogos em que cada pessoa cedeu a casa)
+    var qgStats = {};
+    var qgTotal = {jogos:0, v:0, e:0, d:0};
+    games.forEach(function(g){
+      if (!g.qg) return;
+      qgStats[g.qg] = qgStats[g.qg] || {jogos:0, v:0, e:0, d:0};
+      qgStats[g.qg].jogos++;
+      qgTotal.jogos++;
+      if (g.result === 'Vitória') { qgStats[g.qg].v++; qgTotal.v++; }
+      else if (g.result === 'Empate') { qgStats[g.qg].e++; qgTotal.e++; }
+      else if (g.result === 'Derrota') { qgStats[g.qg].d++; qgTotal.d++; }
+    });
+    var qgBody = document.getElementById('qg-body');
+    function pctOf(qs, key) {
+      var decided = qs.v + qs.e + qs.d;
+      return decided ? qs[key] / decided : 0;
+    }
+    var qgNames = Object.keys(qgStats).sort(function(a, b){
+      var qa = qgStats[a], qb = qgStats[b];
+      if (qb.jogos !== qa.jogos) return qb.jogos - qa.jogos;
+      var pctVa = pctOf(qa, 'v'), pctVb = pctOf(qb, 'v');
+      if (pctVb !== pctVa) return pctVb - pctVa;
+      var pctEa = pctOf(qa, 'e'), pctEb = pctOf(qb, 'e');
+      return pctEb - pctEa;
+    });
+    var qgRows = qgNames.map(function(name){
+      var qs = qgStats[name];
+      var decided = qs.v + qs.e + qs.d;
+      var pctV = decided ? Math.round(qs.v/decided*100) : 0;
+      var pctE = decided ? Math.round(qs.e/decided*100) : 0;
+      var pctD = decided ? Math.round(qs.d/decided*100) : 0;
+      return '<tr><td>'+escapeHtml(name)+'</td><td class="num">'+qs.jogos+'</td><td class="num">'+pctV+'%</td><td class="num">'+pctE+'%</td><td class="num">'+pctD+'%</td></tr>';
+    });
+    var qgTotalDecided = qgTotal.v + qgTotal.e + qgTotal.d;
+    var qgTotalPctV = qgTotalDecided ? Math.round(qgTotal.v/qgTotalDecided*100) : 0;
+    var qgTotalPctE = qgTotalDecided ? Math.round(qgTotal.e/qgTotalDecided*100) : 0;
+    var qgTotalPctD = qgTotalDecided ? Math.round(qgTotal.d/qgTotalDecided*100) : 0;
+    qgRows.push('<tr class="total-row"><td>Total</td><td class="num">'+qgTotal.jogos+'</td><td class="num">'+qgTotalPctV+'%</td><td class="num">'+qgTotalPctE+'%</td><td class="num">'+qgTotalPctD+'%</td></tr>');
+    qgBody.innerHTML = qgRows.join('');
+
+    // Ranking dos Assadores
+    var assadorStats = {};
+    games.forEach(function(g){
+      if (!g.assador) return;
+      assadorStats[g.assador] = (assadorStats[g.assador] || 0) + 1;
+    });
+    var totalComAssador = games.filter(function(g){ return !!g.assador; }).length;
+    var assadorBody = document.getElementById('assador-body');
+    var assadorRows = Object.keys(assadorStats).sort(function(a,b){ return assadorStats[b] - assadorStats[a]; }).map(function(name, idx){
+      var vezes = assadorStats[name];
+      var pct = totalComAssador ? Math.round(vezes/totalComAssador*100) : 0;
+      return '<tr><td class="num rank-num">'+(idx+1)+'</td><td>'+escapeHtml(name)+'</td><td class="num">'+vezes+'</td><td class="num">'+pct+'%</td></tr>';
+    });
+    assadorRows.push('<tr class="total-row"><td></td><td>Total</td><td class="num">'+totalComAssador+'</td><td class="num">100%</td></tr>');
+    assadorBody.innerHTML = assadorRows.join('');
+
+    // Champ table
+    var champStats = {};
+    var champTotal = {jogos:0, somaQuorum:0, comQuorum:0};
+    games.forEach(function(g){
+      if (!g.championship) return;
+      champStats[g.championship] = champStats[g.championship] || {jogos:0, somaQuorum:0, comQuorum:0};
+      champStats[g.championship].jogos++;
+      champTotal.jogos++;
+      if (g.quorum) {
+        champStats[g.championship].somaQuorum += g.quorum;
+        champStats[g.championship].comQuorum++;
+        champTotal.somaQuorum += g.quorum;
+        champTotal.comQuorum++;
+      }
+    });
+    var champBody = document.getElementById('champ-body');
+    var champRows = Object.keys(champStats).sort().map(function(c){
+      var cs = champStats[c];
+      var media = cs.comQuorum ? (cs.somaQuorum/cs.comQuorum).toFixed(1) : '-';
+      return '<tr><td>'+escapeHtml(c)+'</td><td class="num">'+cs.jogos+'</td><td class="num">'+media+'</td></tr>';
+    });
+    var champTotalMedia = champTotal.comQuorum ? (champTotal.somaQuorum/champTotal.comQuorum).toFixed(1) : '-';
+    champRows.push('<tr class="total-row"><td>Total</td><td class="num">'+champTotal.jogos+'</td><td class="num">'+champTotalMedia+'</td></tr>');
+    champBody.innerHTML = champRows.join('');
+  }
+  function barRow(label, count, pct, cls) {
+    return '<div class="bar-row"><div class="bar-label">'+label+'</div><div class="bar-track"><div class="bar-fill '+cls+'" style="width:'+pct+'%"></div></div><div class="bar-pct">'+pct+'%</div></div>';
+  }
+
+  function buildCaptureContainer(partId) {
+    var wrapper = document.createElement('div');
+    wrapper.id = 'capture-offscreen';
+    var headerClone = document.getElementById('capture-flag-header').cloneNode(true);
+    headerClone.removeAttribute('id');
+    var subtitleClone = document.getElementById('dash-subtitle').cloneNode(true);
+    subtitleClone.removeAttribute('id');
+    var partClone = document.getElementById(partId).cloneNode(true);
+    partClone.removeAttribute('id');
+    wrapper.appendChild(headerClone);
+    wrapper.appendChild(subtitleClone);
+    wrapper.appendChild(partClone);
+    document.body.appendChild(wrapper);
+    return wrapper;
+  }
+
+  function exportPart(partId, index) {
+    var wrapper = buildCaptureContainer(partId);
+    return html2canvas(wrapper, {backgroundColor:'#ffffff', scale:2}).then(function(canvas){
+      document.body.removeChild(wrapper);
+      return new Promise(function(resolve){
+        canvas.toBlob(function(blob){ resolve(blob); }, 'image/png');
+      });
+    });
+  }
+
+  function saveBlob(blob, filename) {
+    if (claudeDownloads) {
+      return claudeDownloads.save({filename: filename, data: blob}).catch(function(){
+        fallbackDownload(blob, filename);
+      });
+    } else {
+      fallbackDownload(blob, filename);
+      return Promise.resolve();
+    }
+  }
+
+  document.getElementById('export-img').addEventListener('click', function(){
+    showToast('Gerando imagens...');
+    var dateStr = new Date().toISOString().slice(0,10);
+    exportPart('capture-part1', 1).then(function(blob1){
+      return saveBlob(blob1, 'dashboard-gremio-1-' + dateStr + '.png');
+    }).then(function(){
+      return exportPart('capture-part2', 2);
+    }).then(function(blob2){
+      return saveBlob(blob2, 'dashboard-gremio-2-' + dateStr + '.png');
+    }).then(function(){
+      showToast('2 imagens prontas! Envie no grupo 📲');
+    }).catch(function(err){
+      console.error('export failed', err);
+      showToast('⚠️ Erro ao gerar as imagens, tente de novo');
+    });
+  });
+  function fallbackDownload(blob, filename) {
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
+  }
+
+  // ---------- Histórico ----------
+  function renderHistory(filterTerm) {
+    var term = (filterTerm || document.getElementById('hist-search').value || '').toLowerCase().trim();
+    var sorted = state.games.slice().sort(function(a,b){ return sortKey(b).localeCompare(sortKey(a)); });
+    if (term) {
+      sorted = sorted.filter(function(g){
+        var blob = (g.matchup+' '+g.championship+' '+g.qg+' '+g.assador+' '+(g.attendees||[]).join(' ')).toLowerCase();
+        return blob.indexOf(term) >= 0;
+      });
+    }
+    var container = document.getElementById('history-list');
+    if (!sorted.length) { container.innerHTML = '<p style="color:var(--gray-text);font-size:13px;">Nenhum jogo encontrado.</p>'; return; }
+    container.innerHTML = sorted.map(function(g){
+      var badgeCls = g.result || 'none';
+      return '<div class="history-item">'+
+        '<div class="top">'+
+          '<div><div class="matchup">'+escapeHtml(g.matchup)+'</div>'+
+          '<div class="meta">'+escapeHtml(g.date||'sem data')+' · '+escapeHtml(g.championship||'—')+' · QG: '+escapeHtml(g.qg||'—')+' · Assador: '+escapeHtml(g.assador||'—')+'</div></div>'+
+          '<div style="text-align:right;">'+
+            (g.result ? '<span class="result-badge '+badgeCls+'">'+escapeHtml(g.result)+'</span>' : '<span class="result-badge none">—</span>')+
+          '</div>'+
+        '</div>'+
+        '<div class="history-names">'+escapeHtml((g.attendees||[]).length)+' presentes: '+escapeHtml((g.attendees||[]).join(', '))+'</div>'+
+      '</div>';
+    }).join('');
+  }
+  document.getElementById('hist-search').addEventListener('input', function(){ renderHistory(this.value); });
+
+  // ---------- init ----------
+  renderSeasonOptions();
+  renderDashboard();
+  renderHistory();
+})();
+</script>
+
+
+</body></html>
